@@ -24,7 +24,7 @@ STEP-BY-STEP SUBMISSION
    - Upload via the b-file upload interface on the edit page
 
 5. Add to the EXTENSIONS section:
-   a(14) from _Jeffrey Yan_, Feb 08 2026
+   a(14) from _Jeffrey Ketchersid_, Feb 08 2026
 
 6. Optionally add a COMMENT:
    a(14) = 7766 was computed by enumerating all 75154 conjugacy classes of
@@ -34,7 +34,7 @@ STEP-BY-STEP SUBMISSION
    verified through four rounds of checking using different algorithms.
 
 7. Optionally add a LINK:
-   Jeffrey Yan, <a href="https://github.com/jeff87654/symmetric-group-subgroups">Computation of A174511(14)</a>, GitHub, 2026.
+   Jeffrey Ketchersid, <a href="https://github.com/jeff87654/symmetric-group-subgroups">Computation of A174511(14)</a>, GitHub, 2026.
 
 8. In the Discussion box, write a message like:
 

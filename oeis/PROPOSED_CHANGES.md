@@ -1,7 +1,7 @@
 # Proposed Changes to OEIS A174511
 
 **Sequence**: [A174511](https://oeis.org/A174511) — Number of isomorphism types of subgroups of S_n
-**Author**: Jeffrey Yan
+**Author**: Jeffrey Ketchersid
 **Date**: February 2026
 **Repository**: [github.com/jeff87654/symmetric-group-subgroups](https://github.com/jeff87654/symmetric-group-subgroups)
 
@@ -13,7 +13,7 @@
 |-------|---------|----------|
 | DATA | `1, 2, 4, 9, 16, 29, 55, 137, 241, 453, 894, 2065, 3845` | `1, 2, 4, 9, 16, 29, 55, 137, 241, 453, 894, 2065, 3845, 7766` |
 | b-file | n = 1..13 | n = 1..14 |
-| Extensions | (none after a(13)) | `a(14) from _Jeffrey Yan_, Feb 08 2026` |
+| Extensions | (none after a(13)) | `a(14) from _Jeffrey Ketchersid_, Feb 08 2026` |
 | Links | (unchanged) | Add link to GitHub repository |
 | Comments | (unchanged) | Add computation methodology note |
 
@@ -103,15 +103,15 @@ Result: **0 errors** across all 514 buckets.
 
 ### 3.3 Proposed Comment
 
-> a(14) was computed by enumerating all A000638(14) = 75154 conjugacy classes of subgroups of S_14, classifying 64467 groups via IdGroup (yielding 4602 types), and deduplicating the remaining 10687 large groups by isomorphism testing (yielding 3164 types). The result was independently verified four times using different algorithms. - _Jeffrey Yan_, Feb 08 2026
+> a(14) was computed by enumerating all A000638(14) = 75154 conjugacy classes of subgroups of S_14, classifying 64467 groups via IdGroup (yielding 4602 types), and deduplicating the remaining 10687 large groups by isomorphism testing (yielding 3164 types). The result was independently verified four times using different algorithms. - _Jeffrey Ketchersid_, Feb 08 2026
 
 ### 3.4 Proposed Link
 
-> Jeffrey Yan, <a href="https://github.com/jeff87654/symmetric-group-subgroups">Computation and verification of a(14)</a>, GitHub, 2026.
+> Jeffrey Ketchersid, <a href="https://github.com/jeff87654/symmetric-group-subgroups">Computation and verification of a(14)</a>, GitHub, 2026.
 
 ### 3.5 Extensions Line
 
-> a(14) from _Jeffrey Yan_, Feb 08 2026
+> a(14) from _Jeffrey Ketchersid_, Feb 08 2026
 
 ---
 

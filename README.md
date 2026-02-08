@@ -86,4 +86,4 @@ CLAUDE.md                - Project notes and computation history
 
 ## Author
 
-Jeffrey Yan, February 2026
+Jeffrey Ketchersid, February 2026

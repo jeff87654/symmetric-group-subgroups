@@ -82,7 +82,7 @@ def build_report():
              new_x="LMARGIN", new_y="NEXT")
     pdf.ln(2)
     pdf.set_font("Helvetica", "", 10)
-    pdf.cell(0, 6, "Jeffrey Yan  |  February 2026", align="C",
+    pdf.cell(0, 6, "Jeffrey Ketchersid  |  February 2026", align="C",
              new_x="LMARGIN", new_y="NEXT")
     pdf.ln(6)
 
