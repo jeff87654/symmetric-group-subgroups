@@ -1,0 +1,64 @@
+# Large data files (too big for GitHub)
+conjugacy_cache/
+maxsub_output/
+maxsub_output_s15/
+Partition/cache/
+Partition/batch_*.g
+Partition/Partion Double Check/
+Partition/cross_dedupe/
+Partition/dedupe_result_*.g
+Partition/invariant_dedupe_*.g
+Partition/missing_dedupe_*.g
+Partition/dedupe_order_*.g
+
+# Triple check data files
+triple_check/conjugacy_cache/
+triple_check/dedupe/buckets/
+triple_check/dedupe/checkpoints/
+triple_check/dedupe/results/
+
+# Quad check intermediate files
+triple_check/quad_check/factor_results_*.g
+triple_check/quad_check/fallback_results.g
+triple_check/quad_check/fallback_buckets.g
+triple_check/quad_check/verify_result_*.g
+triple_check/quad_check/log_*.txt
+triple_check/quad_check/_verify_*.g
+triple_check/quad_check/_factor_*.g
+triple_check/quad_check/dp_result.json
+triple_check/quad_check/tc_bucket_breakdown.json
+triple_check/quad_check/factor_analysis.json
+triple_check/quad_check/proof_results.json
+
+# Database files
+subgroups_db*.g
+rebuild_db*.g
+rebuild_from_txt*.g
+filter_db*.g
+filter_db*.py
+
+# Old text output files
+gap_groups*.txt
+gap_log*.txt
+gap_output.txt
+subgroups_summary*.txt
+subgroups_of_Sn.*
+enumeration_log.txt
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Editor/system files
+.obsidian/
+.claude/
+scratchpad/
+nul
+null
+*.swp
+*~
+
+# Backup files
+*- Copy*
+*_backup*
+*_old*

@@ -1,0 +1,16 @@
+# A174511: Number of isomorphism types of subgroups of S_n.
+# Table of n, a(n) for n = 1..14.
+1 1
+2 2
+3 4
+4 9
+5 16
+6 29
+7 55
+8 137
+9 241
+10 453
+11 894
+12 2065
+13 3845
+14 7766

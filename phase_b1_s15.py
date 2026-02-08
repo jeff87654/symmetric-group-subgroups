@@ -1,0 +1,332 @@
+#!/usr/bin/env python3
+"""
+phase_b1_s15.py - Phase B-1: Bucketing for S15 deduplication
+
+Two-pass Python-based approach to handle ~1.3M subgroups without exceeding 64GB.
+Does NOT require loading all groups into GAP simultaneously.
+
+Pass 1: Scan worker output files with regex to extract invariant keys.
+        Build mapping: entry_index -> bucket_id based on invariant key.
+Pass 2: Re-scan worker files. Write each entry's generator images to the
+        appropriate bucket file (singletons.g or worker_buckets_N.g).
+
+Output:
+  maxsub_output_s15/dedup_work/singletons.g       - singleton reps (unique by invariant)
+  maxsub_output_s15/dedup_work/worker_buckets_1..8.g - bucket assignments for parallel dedup
+
+This replaces the GAP-based phase_b1.g which loads ALL groups into memory.
+"""
+
+import re
+import sys
+import os
+import time
+import math
+from pathlib import Path
+from collections import defaultdict
+from datetime import datetime
+
+BASE_DIR = Path(r"C:\Users\jeffr\Downloads\Symmetric Groups")
+OUTPUT_DIR = BASE_DIR / "maxsub_output_s15"
+DEDUP_DIR = OUTPUT_DIR / "dedup_work"
+N = 15
+NUM_WORKERS = 8
+EXPECTED_COUNT = 159129
+
+# Worker output files from Phase A
+# Direct workers + combined leaf results + non-leaf groups
+# Update this list after running phase_a4_combine.py
+WORKER_FILES = [
+    # Direct workers (Phase A-3: compute_s15_maxsub.py)
+    "intrans_1x14",
+    "wreath_3wr5", "wreath_5wr3",
+    "primitive_1", "primitive_2", "primitive_3", "primitive_4",
+    # Leaf computation results (Phase A-2: phase_a2_compute_leaves.py)
+    "combined_leaves",
+    # Non-leaf groups from recursion tree (Phase A-1: phase_a1_enumerate.py)
+    "nonleaf_maxsub",
+]
+
+
+def _match_bracket(text, start):
+    """Find the matching ] for [ at position start. Returns index of ] or -1."""
+    depth = 0
+    for i in range(start, len(text)):
+        if text[i] == '[':
+            depth += 1
+        elif text[i] == ']':
+            depth -= 1
+            if depth == 0:
+                return i
+    return -1
+
+
+def parse_worker_file(filepath):
+    """Parse a worker output file and yield (inv_key_str, gens_str) tuples.
+
+    Each entry in maxsub_results is:
+      rec(gens := [[...], ...], inv := [...], source := "...")
+
+    We extract:
+      - inv: the invariant key as a string (for bucketing)
+      - gens: the raw generator images string (for writing to bucket files)
+    """
+    content = filepath.read_text(encoding='utf-8', errors='replace')
+
+    # Find the maxsub_results list
+    start_marker = "maxsub_results := [\n"
+    start_idx = content.find(start_marker)
+    if start_idx == -1:
+        start_marker = "maxsub_results := ["
+        start_idx = content.find(start_marker)
+    if start_idx == -1:
+        print(f"  WARNING: No maxsub_results found in {filepath.name}")
+        return
+
+    # Parse entries using bracket-matching approach
+    # Each entry: rec(gens := [...], inv := [...], source := "...")
+    body = content[start_idx + len(start_marker):]
+
+    count = 0
+    pos = 0
+    while pos < len(body):
+        # Find next "rec(gens :="
+        rec_start = body.find("rec(gens :=", pos)
+        if rec_start == -1:
+            break
+
+        # Find the gens value: skip to first [ and match brackets
+        gens_start = body.find("[", rec_start + 11)
+        if gens_start == -1:
+            break
+        gens_end = _match_bracket(body, gens_start)
+        if gens_end == -1:
+            pos = rec_start + 11
+            continue
+        gens_str = body[gens_start:gens_end + 1].strip()
+
+        # Find the inv value: skip to "inv :=" then match brackets
+        inv_marker = body.find("inv :=", gens_end)
+        if inv_marker == -1:
+            break
+        inv_start = body.find("[", inv_marker + 6)
+        if inv_start == -1:
+            break
+        inv_end = _match_bracket(body, inv_start)
+        if inv_end == -1:
+            pos = inv_marker + 6
+            continue
+        inv_str = body[inv_start:inv_end + 1].strip()
+
+        # Find the source value
+        source_marker = body.find('source :=', inv_end)
+        if source_marker == -1:
+            break
+        quote1 = body.find('"', source_marker + 9)
+        if quote1 == -1:
+            break
+        quote2 = body.find('"', quote1 + 1)
+        if quote2 == -1:
+            break
+
+        count += 1
+        pos = quote2 + 1
+        yield (inv_str, gens_str)
+
+    if count == 0:
+        print(f"  WARNING: Parsed 0 entries from {filepath.name}")
+
+
+def make_special_entries():
+    """Generate entries for A15 and S15.
+
+    A15: alternating group, generators as image lists on {1,...,15}
+    S15: symmetric group, generators as image lists on {1,...,15}
+    """
+    # A15 generators: (1,2,3) and (1,2,...,15) for n odd, or (1,2,...,14)(ignore 15) etc.
+    # Actually, the standard generators for A_n (n >= 3, n odd) are:
+    #   (1,2,3) and (1,2,3,...,n)
+    # For A_n with n odd, (1,2,3,...,n) is an even permutation, so this works.
+
+    # A15: generated by (1,2,3) and (1,2,...,15)
+    a15_gen1 = list(range(1, 16))  # identity-based: 1-indexed
+    a15_gen1[0], a15_gen1[1], a15_gen1[2] = 2, 3, 1  # (1,2,3)
+    a15_gen2 = list(range(2, 16)) + [1]  # (1,2,...,15)
+
+    # S15: generated by (1,2) and (1,2,...,15)
+    s15_gen1 = list(range(1, 16))
+    s15_gen1[0], s15_gen1[1] = 2, 1  # (1,2)
+    s15_gen2 = list(range(2, 16)) + [1]  # (1,2,...,15)
+
+    # Invariant keys for A15 and S15
+    # Format: [order, orbit_structure, nrCC, derLen, cenSize, exp, abInv, derSize]
+    # A15: order=15!/2, orbits=[15], non-solvable(-1), center=1, etc.
+    a15_order = math.factorial(15) // 2
+    s15_order = math.factorial(15)
+
+    # These will be computed properly in GAP during Phase B-2, but for bucketing
+    # we just need unique invariant keys. A15 and S15 are guaranteed singletons.
+    a15_inv = f"[ {a15_order}, [ 15 ], -1, -1, 1, -1, [  ], {a15_order} ]"
+    s15_inv = f"[ {s15_order}, [ 15 ], -1, -1, 1, -1, [  ], {a15_order} ]"
+
+    a15_gens = f"[ {a15_gen1}, {a15_gen2} ]"
+    s15_gens = f"[ {s15_gen1}, {s15_gen2} ]"
+
+    return [
+        (a15_inv, a15_gens, "special_A15"),
+        (s15_inv, s15_gens, "special_S15"),
+    ]
+
+
+def main():
+    print("=" * 60)
+    print("Phase B-1: Bucketing for S15 deduplication")
+    print("=" * 60)
+    print(f"Started: {datetime.now()}")
+    print(f"Workers: {NUM_WORKERS}")
+    print()
+
+    DEDUP_DIR.mkdir(exist_ok=True)
+
+    # ========================================================================
+    # Pass 1: Scan all worker files and extract invariant keys
+    # ========================================================================
+    print("Pass 1: Scanning worker files for invariant keys...")
+    start_time = time.time()
+
+    # inv_key -> list of (file_label, entry_index, gens_str)
+    buckets = defaultdict(list)
+    total_entries = 0
+    file_stats = {}
+
+    for label in WORKER_FILES:
+        filepath = OUTPUT_DIR / f"{label}.g"
+        if not filepath.exists():
+            print(f"  WARNING: Missing {filepath.name}, skipping")
+            continue
+
+        file_count = 0
+        for inv_str, gens_str in parse_worker_file(filepath):
+            buckets[inv_str].append((label, gens_str))
+            file_count += 1
+            total_entries += 1
+
+        file_stats[label] = file_count
+        print(f"  {label}: {file_count} entries")
+
+    # Add special groups (A15, S15)
+    for inv_str, gens_str, source in make_special_entries():
+        buckets[inv_str].append((source, gens_str))
+        total_entries += 1
+    print(f"  Special groups (A15, S15): 2 entries")
+
+    elapsed = time.time() - start_time
+    print(f"\nPass 1 complete in {elapsed:.1f}s")
+    print(f"  Total entries: {total_entries}")
+    print(f"  Unique invariant keys: {len(buckets)}")
+
+    # ========================================================================
+    # Classify buckets
+    # ========================================================================
+    singletons = {k: v for k, v in buckets.items() if len(v) == 1}
+    multi_buckets = {k: v for k, v in buckets.items() if len(v) > 1}
+
+    total_in_multi = sum(len(v) for v in multi_buckets.values())
+    print(f"  Singleton buckets: {len(singletons)}")
+    print(f"  Multi-group buckets: {len(multi_buckets)}")
+    print(f"  Total groups in multi-buckets: {total_in_multi}")
+
+    # Report largest buckets
+    sorted_multi = sorted(multi_buckets.items(), key=lambda x: len(x[1]), reverse=True)
+    print(f"\n  Top 20 largest buckets:")
+    for key, entries in sorted_multi[:20]:
+        # Extract order from inv key for readability
+        order_match = re.match(r'\[\s*(\d+)', key)
+        order_str = order_match.group(1) if order_match else "?"
+        print(f"    {len(entries):6d} groups, order={order_str}, key={key[:80]}...")
+
+    # ========================================================================
+    # Pass 2: Write output files
+    # ========================================================================
+    print(f"\nPass 2: Writing output files...")
+    pass2_start = time.time()
+
+    # Write singletons
+    singleton_file = DEDUP_DIR / "singletons.g"
+    print(f"  Writing {len(singletons)} singletons to singletons.g...")
+    with open(singleton_file, 'w') as f:
+        f.write("# Singleton bucket representatives for S15 dedup\n")
+        f.write(f"# Count: {len(singletons)}\n")
+        f.write("singleton_reps := [\n")
+        first = True
+        for key, entries in singletons.items():
+            source_label, gens_str = entries[0]
+            if not first:
+                f.write(",\n")
+            first = False
+            f.write(f"  {gens_str}")
+        f.write("\n];\n")
+
+    # Distribute multi-group buckets across workers
+    # Sort by size descending, round-robin assign (largest first for load balancing)
+    sorted_keys = sorted(multi_buckets.keys(), key=lambda k: len(multi_buckets[k]), reverse=True)
+
+    worker_assignments = [[] for _ in range(NUM_WORKERS)]
+    worker_group_counts = [0] * NUM_WORKERS
+
+    for key in sorted_keys:
+        # Assign to the worker with fewest groups (greedy load balancing)
+        min_idx = worker_group_counts.index(min(worker_group_counts))
+        worker_assignments[min_idx].append(key)
+        worker_group_counts[min_idx] += len(multi_buckets[key])
+
+    # Report distribution
+    print(f"\n  Bucket distribution across {NUM_WORKERS} workers:")
+    for w in range(NUM_WORKERS):
+        print(f"    Worker {w+1}: {len(worker_assignments[w])} buckets, "
+              f"{worker_group_counts[w]} total groups")
+
+    # Write worker bucket files
+    for w in range(NUM_WORKERS):
+        worker_file = DEDUP_DIR / f"worker_buckets_{w+1}.g"
+        print(f"  Writing worker_buckets_{w+1}.g ({len(worker_assignments[w])} buckets)...")
+        with open(worker_file, 'w') as f:
+            f.write(f"# Dedup worker {w+1} bucket data for S15\n")
+            f.write(f"# Buckets: {len(worker_assignments[w])}, "
+                    f"Groups: {worker_group_counts[w]}\n")
+            f.write("worker_buckets := [\n")
+            first_bucket = True
+            for key in worker_assignments[w]:
+                entries = multi_buckets[key]
+                if not first_bucket:
+                    f.write(",\n")
+                first_bucket = False
+
+                # Write bucket as rec(key := "...", groups := [ [...], [...], ... ])
+                f.write(f"  rec(key := \"{key}\", groups := [\n")
+                first_group = True
+                for source_label, gens_str in entries:
+                    if not first_group:
+                        f.write(",\n")
+                    first_group = False
+                    f.write(f"    {gens_str}")
+                f.write("\n  ])")
+            f.write("\n];\n")
+
+    pass2_elapsed = time.time() - pass2_start
+    total_elapsed = time.time() - start_time
+
+    print(f"\nPhase B-1 complete!")
+    print(f"  Pass 1: {elapsed:.1f}s")
+    print(f"  Pass 2: {pass2_elapsed:.1f}s")
+    print(f"  Total: {total_elapsed:.1f}s")
+    print(f"  Singletons: {len(singletons)}")
+    print(f"  Multi-group buckets: {len(multi_buckets)} -> {NUM_WORKERS} workers")
+    print(f"  Total entries bucketed: {total_entries}")
+    print(f"\n  Next step: python rerun_phase_b2b3_s15.py")
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

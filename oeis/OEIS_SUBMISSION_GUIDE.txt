@@ -1,0 +1,79 @@
+OEIS Submission Guide for A174511(14) = 7766
+=============================================
+
+This file describes how to submit the new term a(14) = 7766 to OEIS.
+
+PREREQUISITES
+-------------
+1. Create an OEIS account at https://oeis.org/register if you don't have one
+2. Wait for account approval (may take a few days)
+3. Log in to https://oeis.org
+
+STEP-BY-STEP SUBMISSION
+------------------------
+
+1. Go to: https://oeis.org/A174511
+
+2. Click the "edit" link at the top of the sequence page
+
+3. Update the DATA line to:
+   1, 2, 4, 9, 16, 29, 55, 137, 241, 453, 894, 2065, 3845, 7766
+
+4. Upload the new b-file:
+   - Use the file: oeis/b174511.txt (included in this repository)
+   - Upload via the b-file upload interface on the edit page
+
+5. Add to the EXTENSIONS section:
+   a(14) from _Jeffrey Yan_, Feb 08 2026
+
+6. Optionally add a COMMENT:
+   a(14) = 7766 was computed by enumerating all 75154 conjugacy classes of
+   subgroups of S_14 (= A000638(14)), classifying 64467 groups via IdGroup
+   (yielding 4602 types), and deduplicating the remaining 10687 large groups
+   by isomorphism testing (yielding 3164 types). The result was independently
+   verified through four rounds of checking using different algorithms.
+
+7. Optionally add a LINK:
+   Jeffrey Yan, <a href="https://github.com/jeff87654/symmetric-group-subgroups">Computation of A174511(14)</a>, GitHub, 2026.
+
+8. In the Discussion box, write a message like:
+
+   Computed a(14) = 7766 using GAP 4.15.1.
+
+   Method: Computed all A000638(14) = 75,154 conjugacy class representatives
+   of subgroups of S_14 via maximal subgroup decomposition. Classified each
+   by abstract isomorphism type:
+   - 64,467 groups with order < 2000 (excl. 512,768,1024,1536) -> 4,602
+     unique IdGroup types
+   - 10,687 large groups -> 3,164 unique types via invariant bucketing,
+     direct product factor decomposition, ANUPQ 2-group testing, and
+     pairwise IsomorphismGroups
+
+   Verification: Result verified four times using independent methods:
+   1. Original partition-based computation
+   2. Double check: independent 6-way parallel recomputation
+   3. Triple check: fresh start from A000638(14) conjugacy classes
+   4. Quadruple check: independent DP algorithm (factor IdGroup
+      canonicalization) + exhaustive verification of all isomorphism
+      results (0 errors across 514 verification buckets)
+
+   Full code and documentation at:
+   https://github.com/jeff87654/symmetric-group-subgroups
+
+   ~~~~
+
+9. Click "Save" to submit the draft for editorial review
+
+WHAT TO EXPECT
+--------------
+- An Associate Editor will review your submission
+- They may ask questions via comments on the draft
+- If everything checks out, an Editor-in-Chief approves it
+- The process typically takes days to weeks
+
+FILES IN THIS DIRECTORY
+-----------------------
+- b174511.txt                           - Updated b-file (n=1..14)
+- A174511_14_computation_report.pdf     - Detailed computation report
+- generate_report.py                    - Script that generated the PDF
+- OEIS_SUBMISSION_GUIDE.txt             - This file

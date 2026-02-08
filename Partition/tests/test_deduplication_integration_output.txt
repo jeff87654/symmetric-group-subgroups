@@ -1,0 +1,120 @@
+# Started at 2026-01-28 23:52:18.185680
+# Script: test_deduplication_integration.g
+
+
+============================================================
+=== Deduplication Integration Test Suite ====================
+============================================================
+
+=== Part 1: Basic Bucket Deduplication ===
+
+Testing: All same group (5 copies)
+  Input: 5 groups
+  Expected reps: 1
+  Actual reps: 1 - PASS
+
+Testing: All distinct (order 8)
+  Input: 5 groups
+  Expected reps: 5
+  Actual reps: 5 - PASS
+
+Testing: 3 isomorphism classes
+  Input: 6 groups
+  Expected reps: 3
+  Actual reps: 3 - PASS
+
+Testing: Single group
+  Input: 1 groups
+  Expected reps: 1
+  Actual reps: 1 - PASS
+
+Testing: Empty bucket - PASS
+
+=== Part 2: Cross-Deduplication Simulation ===
+
+Testing: New group not in S(n-1)
+  S(n-1) size: 2
+  S(n) size: 1
+  Expected new: 1
+  Actual new: 1 - PASS
+
+Testing: Duplicate of S(n-1) group
+  S(n-1) size: 1
+  S(n) size: 1
+  Expected new: 0
+  Actual new: 0 - PASS
+
+Testing: Mixed: some new, some duplicates
+  S(n-1) size: 2
+  S(n) size: 3
+  Expected new: 1
+  Actual new: 1 - PASS
+
+Testing: All new
+  S(n-1) size: 1
+  S(n) size: 3
+  Expected new: 3
+  Actual new: 3 - PASS
+
+=== Part 3: SigKey Consistency Test ===
+
+Verifying that isomorphic groups have identical sigKeys...
+
+  S4 vs S4: match expected - PASS
+  S4 vs S4: match expected - PASS
+  S4 vs SL(2,3): differ expected - PASS
+  D8 vs D8: match expected - PASS
+
+SigKey tests: 4 passed, 0 failed
+
+=== Part 4: Invariant Filtering Test ===
+
+Verifying that non-isomorphic groups can be distinguished by invariants...
+
+  D8 vs Q8:
+    Same fingerprint - need IsomorphismGroups
+  C4 vs C2xC2:
+    Distinguished by fingerprint - GOOD
+      (differs in exponent)
+      (differs in Frattini size)
+  SmallGroup(24,3) vs SmallGroup(24,5):
+    Distinguished by fingerprint - GOOD
+      (differs in center size)
+      (differs in derived size)
+      (differs in conjugacy classes)
+
+Invariant filtering: 2 pairs distinguished, 1 pairs need full comparison
+
+=== Part 5: Order Profile Test ===
+
+Testing order profile discrimination...
+
+C4 x C2 order profile: rec(
+  1 := 1,
+  2 := 3,
+  4 := 4 )
+C8 order profile: rec(
+  1 := 1,
+  2 := 1,
+  4 := 2,
+  8 := 4 )
+Distinguished by order profile - PASS
+
+
+============================================================
+=== SUMMARY ==============================================
+============================================================
+
+Total tests: 14
+Passed: 14
+Failed: 0
+
+ALL TESTS PASSED!
+
+Results written to /cygdrive/c/Users/jeffr/Downloads/Symmetric Groups/Partitio\
+n/tests/integration_results.txt
+
+=== TEST COMPLETE ===
+
+# Finished at 2026-01-28 23:52:34.279639
+# Exit code: 0

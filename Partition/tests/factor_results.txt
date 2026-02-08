@@ -1,0 +1,58 @@
+FACTOR_TEST_RESULTS := rec(
+  passCount := 29,
+  failCount := 0,
+  buggyVsFixed := rec(
+    buggy := false,
+    fixed := false
+  ),
+  tests := [
+    rec(name := "C2 x S4 = S4 x C2 (reordered)", status := "PASS"),
+    rec(name := "C2 x C2 x C4 = C4 x C2 x C2 (reordered)", status := "PASS"),
+    rec(name := "A4 x A4 = A4 x A4", status := "PASS"),
+    rec(name := "C2 x S4 vs C3 x S4 (different)", status := "PASS"),
+    rec(name := "C2 x C2 vs C4 (different abelian)", status := "PASS"),
+    rec(name := "D8 x C3 = D8 x C3 (same semidirect factor)", status := "PASS"\
+),
+    rec(name := "D8 x C3 vs Q8 x C3 (different semidirect factor)", status := \
+"PASS"),
+    rec(name := "D8 x C5 vs D8 x C7 (same semi, different pure)", status := "P\
+ASS"),
+    rec(name := "SmallGroup(24, 12) x C2 = SmallGroup(24, 12) x C2", status :=\
+ "PASS"),
+    rec(name := "TWO SEMI SAME: ((C2^4):C2) x ((S3xS3):C2) twice", status := "\
+PASS"),
+    rec(name := "TWO SEMI ONE DIFFERS: ((C2^4):C2) vs ((C4^2):C2) same S3xS3:C\
+2", status := "PASS"),
+    rec(name := "TWO SEMI BOTH DIFFER", status := "PASS"),
+    rec(name := "Same semi, different pure factor", status := "PASS"),
+    rec(name := "Concern1: C2 x C3 x D8 vs C2 x C5 x D8 (pure mismatch)", stat\
+us := "PASS"),
+    rec(name := "Concern1: C2 x C2 x C3 x D8 vs C2 x C2 x C7 x D8", status := \
+"PASS"),
+    rec(name := "Concern1: C3 x D8 x Q8 vs C5 x D8 x Q8 (two semi, pure differ\
+s)", status := "PASS"),
+    rec(name := "Concern1: C2 x C3 x D8 vs C2 x C3 x Q8 (pure same, semi diffe\
+rs)", status := "PASS"),
+    rec(name := "Concern1: C3 x D8 vs C5 x D8 (no common pure, semi same)", st\
+atus := "PASS"),
+    rec(name := "Concern1: C3 x C5 x D8 vs C7 x C11 x D8 (all pure differ)", s\
+tatus := "PASS"),
+    rec(name := "Concern1 positive: C2 x C3 x D8 = C3 x C2 x D8 (reordered)", \
+status := "PASS"),
+    rec(name := "Greedy: D8 x D8 = D8 x D8 (identical factors)", status := "PA\
+SS"),
+    rec(name := "Greedy: D8 x Q8 = Q8 x D8 (swapped order)", status := "PASS"),
+    rec(name := "Greedy: D8 x D8 x Q8 = Q8 x D8 x D8 (one unique, two same)", \
+status := "PASS"),
+    rec(name := "Greedy: D8 x Q8 x D16 x Q8 = Q8 x D16 x D8 x Q8 (4 factors)",\
+ status := "PASS"),
+    rec(name := "Greedy negative: D8 x D8 vs D8 x Q8 (one differs)", status :=\
+ "PASS"),
+    rec(name := "Greedy negative: D8 x D16 vs Q8 x QD16 (all differ)", status \
+:= "PASS"),
+    rec(name := "Greedy: DihedralGroup(8) x Q8 = SmallGroup(8,3) x SmallGroup(\
+8,4)", status := "PASS"),
+    rec(name := "Non-direct-product group", status := "PASS"),
+    rec(name := "G x trivial = G", status := "PASS")
+  ]
+);

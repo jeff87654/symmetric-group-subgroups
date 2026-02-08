@@ -1,0 +1,56 @@
+# Started at 2026-02-01 16:16:35.046538
+
+
+Generating static test groups with full invariants...
+Processing 1/41: Part1_C2_x_S4
+Processing 2/41: Part1_S4_x_C2
+Processing 3/41: Part1_C2_x_C2_x_C4
+Processing 4/41: Part1_A4_x_A4
+Processing 5/41: Part1_C3_x_S4
+Processing 6/41: Part2_D8_x_C3
+Processing 7/41: Part2_Q8_x_C3
+Processing 8/41: Part2_D8_x_C5
+Processing 9/41: Part2_D8_x_C7
+Processing 10/41: Part2_SG24_12_x_C2
+Processing 11/41: Part3_SG32_6_x_SG72_40
+Processing 12/41: Part3_SG32_7_x_SG72_40
+Processing 13/41: Part3_SG32_7_x_SG72_41
+Processing 14/41: Part3_SG32_6_x_C3
+Processing 15/41: Part3_SG32_6_x_C5
+Processing 16/41: Concern1_C2_x_C3_x_D8
+Processing 17/41: Concern1_C2_x_C5_x_D8
+Processing 18/41: Concern1_C2_x_C2_x_C3_x_D8
+Processing 19/41: Concern1_C2_x_C2_x_C7_x_D8
+Processing 20/41: Concern1_C3_x_D8_x_Q8
+Processing 21/41: Concern1_C5_x_D8_x_Q8
+Processing 22/41: Concern1_C2_x_C3_x_Q8
+Processing 23/41: Concern1_C3_x_D8
+Processing 24/41: Concern1_C5_x_D8
+Processing 25/41: Concern1_C3_x_C5_x_D8
+Processing 26/41: Concern1_C7_x_C11_x_D8
+Processing 27/41: Concern1_C3_x_C2_x_D8
+Processing 28/41: Concern2_D8_x_D8
+Processing 29/41: Concern2_D8_x_Q8
+Processing 30/41: Concern2_Q8_x_D8
+Processing 31/41: Concern2_D8_x_D8_x_Q8
+Processing 32/41: Concern2_Q8_x_D8_x_D8
+Processing 33/41: Concern2_D8_x_Q8_x_C3
+Processing 34/41: Concern2_Q8_x_C3_x_D8
+Processing 35/41: Concern2_D8_x_Q8_single
+Processing 36/41: Concern2_D8_x_D16
+Processing 37/41: Concern2_Q8_x_QD16
+Processing 38/41: Concern2_Dihedral8_x_Quaternion8
+Processing 39/41: Edge_S5_nonsplit
+Processing 40/41: Edge_S4_x_trivial
+Processing 41/41: Edge_S4_alone
+
+========================================
+Generated: /cygdrive/c/Users/jeffr/Downloads/Symmetric Groups/Partition/tests/\
+test_groups_static_generated.g
+Total groups: 41
+
+To use: rename test_groups_static_generated.g to test_groups_static.g
+========================================
+
+# Finished at 2026-02-01 16:17:05.543230
+# Exit code: 0

@@ -1,0 +1,16 @@
+INTEGRATION_TEST_RESULTS := rec(
+  passCount := 14,
+  failCount := 0,
+  tests := [
+    rec(name := "All same group (5 copies)", status := "PASS"),
+    rec(name := "All distinct (order 8)", status := "PASS"),
+    rec(name := "3 isomorphism classes", status := "PASS"),
+    rec(name := "Single group", status := "PASS"),
+    rec(name := "Empty bucket", status := "PASS"),
+    rec(name := "New group not in S(n-1)", status := "PASS"),
+    rec(name := "Duplicate of S(n-1) group", status := "PASS"),
+    rec(name := "Mixed: some new, some duplicates", status := "PASS"),
+    rec(name := "All new", status := "PASS"),
+    rec(name := "Order profile discrimination", status := "PASS")
+  ]
+);

@@ -1,0 +1,37 @@
+{
+  "run_time": "2026-01-29T00:03:49.961007",
+  "tests": [
+    {
+      "script": "test_factor_comparison.g",
+      "description": "Factor Comparison Tests",
+      "environment": "cygwin",
+      "start_time": "2026-01-29T00:03:49.962005",
+      "status": "success",
+      "exit_code": 0,
+      "output_file": "C:\\Users\\jeffr\\Downloads\\Symmetric Groups\\Partition\\tests\\test_factor_comparison_output.txt",
+      "end_time": "2026-01-29T00:04:06.525932",
+      "parsed": {
+        "passCount": 15,
+        "failCount": 0
+      }
+    },
+    {
+      "script": "test_bucket54_regression.g",
+      "description": "Bucket 54 Regression Test",
+      "environment": "cygwin",
+      "start_time": "2026-01-29T00:04:06.527930",
+      "status": "success",
+      "exit_code": 0,
+      "output_file": "C:\\Users\\jeffr\\Downloads\\Symmetric Groups\\Partition\\tests\\test_bucket54_regression_output.txt",
+      "end_time": "2026-01-29T00:04:25.048608",
+      "parsed": {}
+    }
+  ],
+  "summary": {
+    "total_tests": 15,
+    "passed": 15,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

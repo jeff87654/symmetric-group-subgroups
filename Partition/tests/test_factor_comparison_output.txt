@@ -1,0 +1,187 @@
+# Started at 2026-01-29 00:03:49.963006
+# Script: test_factor_comparison.g
+
+
+============================================================
+=== Factor Comparison Test Suite ============================
+============================================================
+
+Syntax warning: Unbound global variable in /cygdrive/c/Users/jeffr/Downloads/S\
+ymmetric Groups/Partition/tests/test_factor_comparison.g:46
+    if IsPerm(gens[1]) or IsPcElement(gens[1]) then
+                          ^^^^^^^^^^^
+=== Part 1: Pure Direct Products ===
+
+Testing: C2 x S4 = S4 x C2 (reordered)
+  Groups: order 48 and 48
+  Expected: true
+  G1 factors: [ "C2", "S4" ]
+  G2 factors: [ "C2", "S4" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+Testing: C2 x C2 x C4 = C4 x C2 x C2 (reordered)
+  Groups: order 16 and 16
+  Expected: true
+  G1 factors: [ "C2", "C2", "C4" ]
+  G2 factors: [ "C2", "C2", "C4" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+Testing: A4 x A4 = A4 x A4
+  Groups: order 144 and 144
+  Expected: true
+  G1 factors: [ "A4", "A4" ]
+  G2 factors: [ "A4", "A4" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+Testing: C2 x S4 vs C3 x S4 (different)
+  Groups: order 48 and 72
+  Expected: false
+  G1 factors: [ "C2", "S4" ]
+  G2 factors: [ "C3", "S4" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+Testing: C2 x C2 vs C4 (different abelian)
+  Groups: order 4 and 4
+  Expected: fail
+  G1 factors: [ "C2", "C2" ]
+  G2 factors: [ "C4" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+=== Part 2: Single Semidirect Factor ===
+
+Testing: D8 x C3 = D8 x C3 (same semidirect factor)
+  Groups: order 24 and 24
+  Expected: true
+  G1 factors: [ "C3", "D8" ]
+  G2 factors: [ "C3", "D8" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+Testing: D8 x C3 vs Q8 x C3 (different semidirect factor)
+  Groups: order 24 and 24
+  Expected: false
+  G1 factors: [ "C3", "D8" ]
+  G2 factors: [ "C3", "Q8" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+Testing: D8 x C5 vs D8 x C7 (same semi, different pure)
+  Groups: order 40 and 56
+  Expected: false
+  G1 factors: [ "C5", "D8" ]
+  G2 factors: [ "C7", "D8" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+Testing: SmallGroup(24, 12) x C2 = SmallGroup(24, 12) x C2
+  Groups: order 48 and 48
+  Expected: true
+  G1 factors: [ "C2", "S4" ]
+  G2 factors: [ "C2", "S4" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+=== Part 3: Multiple Semidirect Factors (Bug Case) ===
+
+Testing: TWO SEMI SAME: ((C2^4):C2) x ((S3xS3):C2) twice
+  Groups: order 2304 and 2304
+  Expected: true
+  G1 factors: [ "(C2 x C2 x C2) : C4", "(S3 x S3) : C2" ]
+  G2 factors: [ "(C2 x C2 x C2) : C4", "(S3 x S3) : C2" ]
+  G1 ambiguous keys: [ "(C2 x C2 x C2) : C4", "(S3 x S3) : C2" ]
+  G2 ambiguous keys: [ "(C2 x C2 x C2) : C4", "(S3 x S3) : C2" ]
+  Result: PASS
+
+Testing: TWO SEMI ONE DIFFERS: ((C2^4):C2) vs ((C4^2):C2) same S3xS3:C2
+  Groups: order 2304 and 2304
+  Expected: false
+  G1 factors: [ "(C2 x C2 x C2) : C4", "(S3 x S3) : C2" ]
+  G2 factors: [ "(C8 : C2) : C2", "(S3 x S3) : C2" ]
+  G1 ambiguous keys: [ "(C2 x C2 x C2) : C4", "(S3 x S3) : C2" ]
+  G2 ambiguous keys: [ "(S3 x S3) : C2", "(C8 : C2) : C2" ]
+  Result: PASS
+
+Testing: TWO SEMI BOTH DIFFER
+  Groups: order 2304 and 2304
+  Expected: false
+  G1 factors: [ "(C2 x C2 x C2) : C4", "(S3 x S3) : C2" ]
+  G2 factors: [ "(C3 x C3) : Q8", "(C8 : C2) : C2" ]
+  G1 ambiguous keys: [ "(C2 x C2 x C2) : C4", "(S3 x S3) : C2" ]
+  G2 ambiguous keys: [ "(C8 : C2) : C2", "(C3 x C3) : Q8" ]
+  Result: PASS
+
+Testing: Same semi, different pure factor
+  Groups: order 96 and 160
+  Expected: false
+  G1 factors: [ "(C2 x C2 x C2) : C4", "C3" ]
+  G2 factors: [ "(C2 x C2 x C2) : C4", "C5" ]
+  G1 ambiguous keys: [ "(C2 x C2 x C2) : C4" ]
+  G2 ambiguous keys: [ "(C2 x C2 x C2) : C4" ]
+  Result: PASS
+
+=== Part 4: Buggy Algorithm Regression Test ===
+
+Testing buggy algorithm on the critical bug case...
+
+G1: ((C2^4):C2) x ((S3xS3):C2)
+G2: ((C4^2):C2) x ((S3xS3):C2)
+Expected: NOT isomorphic (false)
+
+Buggy algorithm result: false
+Fixed algorithm result: false
+
+>>> WARNING: Results don't match expected pattern
+>>> Buggy expected true (wrong), Fixed expected false (correct)
+
+=== Part 5: Edge Cases ===
+
+Testing: Non-direct-product group
+  Groups: order 120 and 120
+  Expected: fail
+  G1 factors: [ "S5" ]
+  G2 factors: [ "S5" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+Testing: G x trivial = G
+  Groups: order 24 and 24
+  Expected: fail
+  G1 factors: [ "1", "S4" ]
+  G2 factors: [ "S4" ]
+  G1 ambiguous keys: [  ]
+  G2 ambiguous keys: [  ]
+  Result: PASS
+
+
+============================================================
+=== SUMMARY ==============================================
+============================================================
+
+Total tests: 15
+Passed: 15
+Failed: 0
+
+ALL TESTS PASSED!
+
+Results written to /cygdrive/c/Users/jeffr/Downloads/Symmetric Groups/Partitio\
+n/tests/factor_results.txt
+
+=== TEST COMPLETE ===
+
+# Finished at 2026-01-29 00:04:06.523930
+# Exit code: 0

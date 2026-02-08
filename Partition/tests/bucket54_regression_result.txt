@@ -1,0 +1,6 @@
+BUCKET54_REGRESSION := rec(
+  groundTruth := "non-isomorphic",
+  buggyWouldSay := "non-isomorphic",
+  fixedSays := "non-isomorphic",
+  status := "PASS"
+);
