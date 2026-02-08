@@ -196,8 +196,9 @@ def build_report():
         "IsIsomorphicPGroup function, which is optimized for p-groups."
     )
     pdf.bullet(
-        "Full isomorphism testing: The remaining non-DP, non-2-group buckets (2,095 groups "
-        "across 508 buckets) used GAP's IsomorphismGroups for pairwise comparison."
+        "Full isomorphism testing: The remaining non-DP, non-2-group groups (2,920 groups "
+        "across 508 multi-group + 353 singleton buckets) used GAP's IsomorphismGroups for "
+        "pairwise comparison within each bucket."
     )
     pdf.ln(1)
     pdf.body_text(
@@ -218,11 +219,10 @@ def build_report():
     pdf.set_font("Helvetica", "", 10)
     rows = [
         ("IdGroup-compatible", "64,467", "4,602"),
-        ("Large: Direct products", "7,431", "2,269"),
+        ("Large: DP factor dedup", "7,429", "2,269"),
         ("Large: 2-groups (order 512)", "336", "10"),
-        ("Large: Regular (non-DP, non-2-group)", "2,908", "884"),
-        ("Large: Difficult bucket (order 2,592)", "4", "1"),
-        ("TOTAL", "75,154 *", "7,766"),
+        ("Large: Isomorphism testing", "2,922", "885"),
+        ("TOTAL", "75,154", "7,766"),
     ]
     for i, (cat, groups, types) in enumerate(rows):
         bold = i == len(rows) - 1
@@ -236,8 +236,11 @@ def build_report():
             pdf.set_font("Helvetica", "", 10)
     pdf.ln(1)
     pdf.set_font("Helvetica", "I", 9)
-    pdf.cell(0, 5, "* 75,154 = A000638(14), the number of conjugacy classes of subgroups of S_14.",
-             new_x="LMARGIN", new_y="NEXT")
+    pdf.multi_cell(0, 4, (
+        "Note: 75,154 = A000638(14). Of the 7,431 direct product groups, 2 share invariant "
+        "signatures with non-DP groups and were processed via isomorphism testing (hence 7,429 "
+        "in the DP row, 2,922 in the isomorphism testing row). Net type count is unaffected."
+    ))
     pdf.ln(3)
 
     # ================================================================
@@ -388,7 +391,34 @@ def build_report():
     )
 
     # ================================================================
-    pdf.section_title("9. Related Sequences")
+    pdf.section_title("9. Spot-Check Against SmallGroups Library")
+    pdf.body_text(
+        "As an additional consistency check, we verified at 13 selected group orders that the "
+        "number of distinct IdGroup types found among S_14 subgroups does not exceed "
+        "NrSmallGroups(n). All 13 orders pass. At 6 orders (6, 10, 12, 20, 24, 36, 60), every "
+        "isomorphism type in the library appears as a subgroup of S_14."
+    )
+    pdf.ln(1)
+    spot_data = [
+        ("6", "52", "2", "2"), ("10", "20", "2", "2"), ("12", "303", "5", "5"),
+        ("16", "1936", "12", "14"), ("20", "93", "5", "5"), ("24", "1264", "15", "15"),
+        ("36", "571", "14", "14"), ("48", "2881", "45", "52"), ("60", "163", "13", "13"),
+        ("72", "1560", "41", "50"), ("96", "3938", "103", "231"),
+        ("100", "57", "11", "16"), ("120", "400", "35", "47"),
+    ]
+    pdf.set_font("Helvetica", "B", 9)
+    for hdr in ["Order", "Conj.Classes", "Types Found", "Library"]:
+        pdf.cell(35, 5.5, hdr, border=1, align="C")
+    pdf.ln()
+    pdf.set_font("Helvetica", "", 9)
+    for row in spot_data:
+        for val in row:
+            pdf.cell(35, 5, val, border=1, align="C")
+        pdf.ln()
+    pdf.ln(3)
+
+    # ================================================================
+    pdf.section_title("10. Related Sequences")
     pdf.body_text("This computation also verified/produced values for related OEIS sequences:")
     pdf.ln(1)
     pdf.bullet("A000638(14) = 75,154 (conjugacy classes of subgroups of S_14) - matches known value")

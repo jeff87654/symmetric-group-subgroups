@@ -41,12 +41,16 @@ The 75,154 conjugacy class representatives of subgroups of S_14 decompose into 7
 | Category | Input groups | Distinct types | Method |
 |----------|-------------|----------------|--------|
 | IdGroup-compatible (order < 2000, excl. 512/768/1024/1536) | 64,467 | 4,602 | GAP `IdGroup` — canonical, exact |
-| Direct products | 7,431 | 2,269 | Factor-level `IdGroup` canonicalization |
-| 2-groups (order 512) | 336 | 10 | ANUPQ `IsIsomorphicPGroup` |
-| Non-DP regular groups | 2,449 | 883 | Invariant bucketing + `IsomorphismGroups` |
-| Hard bucket (order 10,368) | 8 | 1 | Explicit bijective homomorphisms |
-| Difficult bucket (order 2,592) | 4 | 1 | Explicit bijective homomorphisms |
+| Large: direct product factor dedup | 7,429 | 2,269 | Factor-level `IdGroup` canonicalization |
+| Large: 2-groups (order 512) | 336 | 10 | ANUPQ `IsIsomorphicPGroup` |
+| Large: isomorphism testing | 2,922 | 885 | Invariant bucketing + `IsomorphismGroups` |
 | **Total** | **75,154** | **7,766** | |
+
+The 10,687 large groups (order >= 2000 or order in {512, 768, 1024, 1536}) were partitioned into invariant-based buckets. Of the 7,431 direct product groups in the dataset, 2 share invariant signatures with non-DP groups and were bucketed with the isomorphism-testing category; hence 7,429 in the DP row and 2,922 (= 2,920 non-DP + 2 DP overlap) in the isomorphism-testing row. The net type count is unaffected.
+
+Two notable sub-cases within the isomorphism-testing category required special treatment:
+- **Order 10,368 bucket** (8 groups → 1 type): `IsomorphismGroups` takes 25–53 min per pair; verified via explicit bijective `GroupHomomorphismByImages` (see `hard_bucket_10368_proof.g`)
+- **Order 2,592 bucket** (4 groups → 1 type): verified via explicit bijective homomorphisms (see `difficult_bucket_proof.g`)
 
 ### 2.3 Consistency Checks
 
@@ -54,12 +58,13 @@ The 75,154 conjugacy class representatives of subgroups of S_14 decompose into 7
 - **Growth ratio**: a(14)/a(13) = 7,766/3,845 = 2.02, consistent with the observed pattern (ratios range from 1.76 to 2.49 for n = 2..13).
 - **Order coverage**: Every group order appearing among the 75,154 representatives is accounted for in the final type count. Validated by `validate_order_coverage.g`.
 - **Cross-deduplication**: Large groups from S_14 were cross-checked against S_13 large groups to ensure no double-counting of types already present in smaller symmetric groups.
+- **Spot-check against SmallGroups library**: For 13 selected orders with full SmallGroups coverage, the number of distinct `IdGroup` values found among S_14 subgroups was verified to be <= `NrSmallGroups(n)`. All 13 orders pass. At 6 of these orders (6, 10, 12, 20, 24, 36, 60), every isomorphism type in the SmallGroups library appears as a subgroup of S_14. See `spot_check_orders.g`.
 
 ### 2.4 Quadruple Check Details
 
 The final verification round (quadruple check) used two independent approaches:
 
-**Phase 1 — Fresh DP deduplication**: Instead of the triple check's bipartite factor matching (`CompareByFactorsV3`), a completely different algorithm was used: compute `IdGroup` of each direct product factor, sort the list, and use that as a canonical key. Two DP groups are isomorphic iff their sorted factor IdGroup lists match. For factors without IdGroup (order 512/1024), extended invariants + pairwise `IsomorphismGroups` on individual factors was used as fallback. Result: 2,271 DP representatives (2 of which overlap with regular buckets due to shared invariant signatures — net total unchanged).
+**Phase 1 — Fresh DP deduplication**: Instead of the triple check's bipartite factor matching (`CompareByFactorsV3`), a completely different algorithm was used: compute `IdGroup` of each direct product factor, sort the list, and use that as a canonical key. Two DP groups are isomorphic iff their sorted factor IdGroup lists match. For factors without IdGroup (order 512/1024), extended invariants + pairwise `IsomorphismGroups` on individual factors was used as fallback. Result: 2,271 unique types among all 7,431 DP groups. Of these, 2,269 were in DP-specific buckets during the triple check; the remaining 2 DP groups (indices 4230 and 7429) shared invariant signatures with non-DP groups and were processed in regular isomorphism-testing buckets, where they were correctly identified as unique representatives. Net type count: unchanged at 3,164.
 
 **Phase 2 — Exhaustive verification of non-DP results**: For every multi-group bucket from the triple check's deduplication (508 regular buckets + 6 2-group buckets = 514 total), verified:
 - (a) All chosen representatives are **mutually non-isomorphic** (no over-counting)
@@ -157,3 +162,4 @@ All intermediate values were caused by bugs in the deduplication pipeline, not i
 | `triple_check/hard_bucket_10368_proof.g` | Explicit isomorphism proof (order 10,368) |
 | `triple_check/quad_check/` | Quadruple check verification scripts |
 | `triple_check/quad_check/merge_qc_results.py` | Final verification merge (PASS) |
+| `triple_check/quad_check/spot_check_orders.g` | Spot-check of IdGroup types at 13 orders |
