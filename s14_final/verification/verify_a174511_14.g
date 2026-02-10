@@ -28,7 +28,6 @@ OUT_DIR := Concatenation(BASE_DIR, "verification/");
 
 # Output file paths
 PHASE_B_FILE := Concatenation(OUT_DIR, "phase_b_invariants.g");
-PHASE_C_FILE := Concatenation(OUT_DIR, "phase_c_nonconjugacy.txt");
 PHASE_D_FILE := Concatenation(OUT_DIR, "phase_d_proof_verification.txt");
 PHASE_E_FILE := Concatenation(OUT_DIR, "phase_e_noniso.txt");
 MAPPING_FILE := Concatenation(OUT_DIR, "class_to_type_mapping.g");
@@ -250,8 +249,6 @@ if SKIP_CONJUGACY then
 else
 
 Print("=== PHASE C: Verify non-conjugacy ===\n\n");
-PrintTo(PHASE_C_FILE, "# Phase C: Non-conjugacy verification\n\n");
-
 # Bucket by (order, orbProfile, efpHist) - S14-conjugacy invariants
 # These are computed here (not in Phase B) to keep Phase B lightweight
 Print("Computing S14-conjugacy invariants and bucketing...\n");
@@ -312,11 +309,6 @@ Print("  Total buckets: ", _nBuckets, "\n");
 Print("  Singleton buckets: ", _nSingletons, "\n");
 Print("  Multi-group buckets: ", _nMulti, " (", _multiGroups, " groups, ",
       _nPairsToTest, " pairs)\n");
-AppendTo(PHASE_C_FILE, "Total buckets: ", _nBuckets, "\n");
-AppendTo(PHASE_C_FILE, "Singleton buckets: ", _nSingletons, "\n");
-AppendTo(PHASE_C_FILE, "Multi-group buckets: ", _nMulti, "\n");
-AppendTo(PHASE_C_FILE, "Pairs to test: ", _nPairsToTest, "\n\n");
-
 # Test all pairs within non-singleton buckets
 _S14 := SymmetricGroup(14);
 _conjTestCount := 0;
@@ -328,9 +320,6 @@ for _bk in _bucketKeys do
     if Length(_bucket) <= 1 then
         continue;
     fi;
-
-    AppendTo(PHASE_C_FILE, "Bucket ", _bk, ": ", Length(_bucket), " groups [",
-             _bucket, "]\n");
 
     for _j in [1..Length(_bucket)] do
         for _k in [_j+1..Length(_bucket)] do
@@ -348,10 +337,6 @@ for _bk in _bucketKeys do
                 _conjFailures := _conjFailures + 1;
                 Print("FAIL: groups ", _idxA, " and ", _idxB,
                       " are conjugate in S14!\n");
-                AppendTo(PHASE_C_FILE, "  FAIL: ", _idxA, " ~ ", _idxB,
-                         " CONJUGATE\n");
-            else
-                AppendTo(PHASE_C_FILE, "  PASS: ", _idxA, " !~ ", _idxB, "\n");
             fi;
 
             Unbind(_GA);
@@ -366,9 +351,6 @@ for _bk in _bucketKeys do
 od;
 
 Unbind(_S14);
-
-AppendTo(PHASE_C_FILE, "\nSummary: ", _testedPairs, " pairs tested, ",
-         _conjFailures, " failures\n");
 
 if _conjFailures > 0 then
     Print("FATAL: ", _conjFailures, " conjugate pairs found!\n");
@@ -1333,7 +1315,6 @@ Print("  Output files:\n");
 Print("    ", SUMMARY_FILE, "\n");
 Print("    ", MAPPING_FILE, "\n");
 Print("    ", FINGERPRINT_FILE, "\n");
-Print("    ", PHASE_C_FILE, "\n");
 Print("    ", PHASE_D_FILE, "\n");
 Print("    ", PHASE_E_FILE, "\n");
 
