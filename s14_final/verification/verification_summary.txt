@@ -1,0 +1,42 @@
+A174511(14) = 7766  VERIFIED
+
+Input: 75154 conjugacy class representatives of subgroups of S_14
+Phase B invariants: TRUSTED (loaded from precomputed file)
+
+=== Non-conjugacy (Phase C) ===
+SKIPPED (SKIP_CONJUGACY = true)
+
+=== Upper bound (at most 7766 types) ===
+  64467 groups classified by IdGroup -> 4602 unique types
+  10687 large groups linked by 7523 verified isomorphism proofs -> 3164 reps
+  7523/
+7523 proofs verified as bijective homomorphisms (injective + surjective)
+  Total: 4602 + 3164 = 7766
+
+=== Lower bound (at least 7766 types) ===
+  4602 IdGroup types: distinct by IdGroup identifier
+  3164 large group reps: pairwise non-isomorphic
+    * 2178 singleton invariant buckets (unique by sigKey+exponent)
+    * 86 pairs distinguished by centerSize
+    * 775 pairs distinguished by elemOrdProfile
+    * 4 pairs distinguished by classSizes
+    * 0 pairs distinguished by chiefFactorSizes
+    * 4 pairs distinguished by derivedSeriesSizes
+    * 2 pairs distinguished by nilpotencyClass
+    * 2 pairs distinguished by numNormalSubs
+    * 0 pairs distinguished by frattiniSize
+    * 36 pairs distinguished by autGroupOrder
+    * 13 pairs distinguished by subgroupOrderProfile
+    * 0 pairs distinguished by powerMapStructure
+    * 0 pairs distinguished by IsomorphismGroups
+  No overlap between IdGroup types and large group types (disjoint order range\
+s)
+
+=== Timing ===
+  Phase A (load): 4s
+  Phase B (invariants): 0s
+  Phase C (non-conjugacy): 0s
+  Phase D (proofs+mapping): 56s
+  Phase E (non-isomorphism): 1192s
+  Phase F (output): 6s
+  Total: 1260s
