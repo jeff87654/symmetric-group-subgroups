@@ -17,6 +17,9 @@
 ##    E: Verify 7,766 type representatives are pairwise non-isomorphic
 ##    F: Output mapping, fingerprints, and summary
 ##
+##  Options (set before Read()ing this script):
+##    SKIP_CONJUGACY := true;   # skip Phase C (non-conjugacy checks)
+##
 ##############################################################################
 
 BASE_DIR := "/cygdrive/c/Users/jeffr/Downloads/Symmetric Groups/s14_final/";
@@ -30,6 +33,11 @@ PHASE_E_FILE := Concatenation(OUT_DIR, "phase_e_noniso.txt");
 MAPPING_FILE := Concatenation(OUT_DIR, "class_to_type_mapping.g");
 FINGERPRINT_FILE := Concatenation(OUT_DIR, "type_fingerprints.g");
 SUMMARY_FILE := Concatenation(OUT_DIR, "verification_summary.txt");
+
+# Options (can be set before Read()ing this script)
+if not IsBound(SKIP_CONJUGACY) then
+    SKIP_CONJUGACY := false;
+fi;
 
 # Expected constants
 EXPECTED_CLASSES := 75154;
@@ -144,41 +152,10 @@ for _i in [1..EXPECTED_CLASSES] do
     _inv.index := _i;
     _inv.order := Size(_G);
 
-    # S14-conjugacy invariants
-    _orbs := Orbits(_G, [1..14]);
-    _inv.orbProfile := SortedList(List(_orbs, Length));
-
-    # Conjugacy classes (needed for multiple invariants)
-    _cc := ConjugacyClasses(_G);
-    _inv.nrCC := Length(_cc);
-
-    # efpHist: [Order(rep), 14-NrMovedPoints(rep), Size(class)] for each class
-    _efpList := [];
-    for _c in _cc do
-        _rep := Representative(_c);
-        Add(_efpList, [Order(_rep), 14 - NrMovedPoints(_rep), Size(_c)]);
-    od;
-    Sort(_efpList);
-    _inv.efpHist := _efpList;
-
-    # elemOrdProfile: number of elements of each order (via conjugacy classes)
-    _ordCounts := rec();
-    for _c in _cc do
-        _ord := Order(Representative(_c));
-        _key := String(_ord);
-        if IsBound(_ordCounts.(_key)) then
-            _ordCounts.(_key) := _ordCounts.(_key) + Size(_c);
-        else
-            _ordCounts.(_key) := Size(_c);
-        fi;
-    od;
-    _ordKeys := List(RecNames(_ordCounts), Int);
-    Sort(_ordKeys);
-    _inv.elemOrdProfile := List(_ordKeys, _o -> [_o, _ordCounts.(String(_o))]);
-
-    # sigKey
+    # sigKey: [order, derivedSize, nrCC, derivedLength, abelianInvariants]
     _D := DerivedSubgroup(_G);
     _derivedSize := Size(_D);
+    _inv.nrCC := NrConjugacyClasses(_G);
     if IsSolvableGroup(_G) then
         _derivedLength := DerivedLength(_G);
     else
@@ -188,9 +165,8 @@ for _i in [1..EXPECTED_CLASSES] do
     Sort(_abi);
     _inv.sigKey := [_inv.order, _derivedSize, _inv.nrCC, _derivedLength, _abi];
 
-    # Exponent and center size
+    # Exponent
     _inv.exponent := Exponent(_G);
-    _inv.centerSize := Size(Centre(_G));
 
     # IdGroup (if compatible)
     if IsIdGroupCompatible(_inv.order) then
@@ -201,11 +177,6 @@ for _i in [1..EXPECTED_CLASSES] do
         _largeCount := _largeCount + 1;
     fi;
 
-    # Sorted conjugacy class sizes (for Phase E)
-    _classSizes := List(_cc, Size);
-    Sort(_classSizes);
-    _inv.classSizes := _classSizes;
-
     allInvariants[_i] := _inv;
 
     # Checkpoint
@@ -215,7 +186,6 @@ for _i in [1..EXPECTED_CLASSES] do
 
     # Release group object
     Unbind(_G);
-    Unbind(_cc);
     Unbind(_D);
 od;
 
@@ -231,26 +201,47 @@ Print("Phase B time: ", Int((Runtime() - phaseBStart)/1000), "s\n\n");
 ## PHASE C: Verify non-conjugacy (all 75,154 pairwise non-conjugate in S_14)
 ##############################################################################
 
-Print("=== PHASE C: Verify non-conjugacy ===\n\n");
 phaseCStart := Runtime();
+
+if SKIP_CONJUGACY then
+    Print("=== PHASE C: SKIPPED (SKIP_CONJUGACY = true) ===\n\n");
+    _phaseCStats := rec(skipped := true);
+else
+
+Print("=== PHASE C: Verify non-conjugacy ===\n\n");
 PrintTo(PHASE_C_FILE, "# Phase C: Non-conjugacy verification\n\n");
 
-# Bucket by (order, orbProfile, efpHist) - this is an S14-conjugacy invariant
-Print("Bucketing by S14-conjugacy invariants...\n");
+# Bucket by (order, orbProfile, efpHist) - S14-conjugacy invariants
+# These are computed here (not in Phase B) to keep Phase B lightweight
+Print("Computing S14-conjugacy invariants and bucketing...\n");
 
 _bucketMap := rec();
 for _i in [1..EXPECTED_CLASSES] do
-    _inv := allInvariants[_i];
+    if _i mod 5000 = 0 then
+        Print("  Phase C bucketing: ", _i, "/", EXPECTED_CLASSES, "\n");
+    fi;
+    _G := Group(List(subgens[_i], PermList));
+    _orbs := Orbits(_G, [1..14]);
+    _orbProfile := SortedList(List(_orbs, Length));
+    _cc := ConjugacyClasses(_G);
+    _efpList := [];
+    for _c in _cc do
+        _rep := Representative(_c);
+        Add(_efpList, [Order(_rep), 14 - NrMovedPoints(_rep), Size(_c)]);
+    od;
+    Sort(_efpList);
+    Unbind(_G);
+    Unbind(_cc);
+
     # Build a compact key string
-    _bkey := Concatenation(String(_inv.order), "_",
-                           String(_inv.orbProfile), "_",
-                           String(_inv.efpHist));
-    # Hash to short key if too long (>1000 chars)
+    _bkey := Concatenation(String(allInvariants[_i].order), "_",
+                           String(_orbProfile), "_",
+                           String(_efpList));
     if Length(_bkey) > 1000 then
-        _bkey := Concatenation(String(_inv.order), "_",
-                               String(_inv.orbProfile), "_",
-                               String(Length(_inv.efpHist)), "_",
-                               String(_inv.nrCC));
+        _bkey := Concatenation(String(allInvariants[_i].order), "_",
+                               String(_orbProfile), "_",
+                               String(Length(_efpList)), "_",
+                               String(allInvariants[_i].nrCC));
     fi;
     if not IsBound(_bucketMap.(_bkey)) then
         _bucketMap.(_bkey) := [];
@@ -351,12 +342,15 @@ Print("Phase C time: ", Int((Runtime() - phaseCStart)/1000), "s\n\n");
 
 # Save Phase C stats for summary
 _phaseCStats := rec(
+    skipped := false,
     nBuckets := _nBuckets,
     nSingletons := _nSingletons,
     nMulti := _nMulti,
     nPairsToTest := _nPairsToTest,
     nTestedPairs := _testedPairs
 );
+
+fi; # end SKIP_CONJUGACY
 
 ##############################################################################
 ## PHASE D: Verify isomorphism proofs + build mapping
@@ -680,20 +674,12 @@ AppendTo(PHASE_E_FILE, "E3: ", _overlapCount,
 Print("\nE2: Verifying ", _nLargeTypes,
       " large group reps pairwise non-isomorphic...\n");
 
-# Bucket large reps by (sigKey, exponent, centerSize, elemOrdProfile)
+# Bucket large reps by (sigKey, exponent) from Phase B
 _largeBucketMap := rec();
 for _r in _largeRootSet do
     _inv := allInvariants[_r];
     _lbkey := Concatenation(String(_inv.sigKey), "_",
-                            String(_inv.exponent), "_",
-                            String(_inv.centerSize), "_",
-                            String(_inv.elemOrdProfile));
-    if Length(_lbkey) > 1000 then
-        _lbkey := Concatenation(String(_inv.order), "_",
-                                String(_inv.sigKey), "_",
-                                String(_inv.exponent), "_",
-                                String(_inv.centerSize));
-    fi;
+                            String(_inv.exponent));
     if not IsBound(_largeBucketMap.(_lbkey)) then
         _largeBucketMap.(_lbkey) := [];
     fi;
@@ -723,6 +709,8 @@ AppendTo(PHASE_E_FILE, "E2: Large rep buckets: ", _lnSingletons,
 # Stats for summary
 _e2Stats := rec(
     singletons := _lnSingletons,
+    byCenterSize := 0,
+    byElemOrdProfile := 0,
     byClassSizes := 0,
     byChiefFactors := 0,
     byDerivedSeries := 0,
@@ -758,7 +746,54 @@ _GetGroupE := function(idx)
     return grp;
 end;
 
-# Helper functions for expensive invariants (computed on demand, cached in allInvariants)
+# Helper functions for invariants (computed on demand, cached in allInvariants)
+
+_GetCenterSize := function(idx)
+    local G;
+    if IsBound(allInvariants[idx].centerSize) then
+        return allInvariants[idx].centerSize;
+    fi;
+    G := _GetGroupE(idx);
+    allInvariants[idx].centerSize := Size(Centre(G));
+    return allInvariants[idx].centerSize;
+end;
+
+_GetElemOrdProfile := function(idx)
+    local G, cc, ordCounts, c, ord, key, ordKeys;
+    if IsBound(allInvariants[idx].elemOrdProfile) then
+        return allInvariants[idx].elemOrdProfile;
+    fi;
+    G := _GetGroupE(idx);
+    cc := ConjugacyClasses(G);
+    ordCounts := rec();
+    for c in cc do
+        ord := Order(Representative(c));
+        key := String(ord);
+        if IsBound(ordCounts.(key)) then
+            ordCounts.(key) := ordCounts.(key) + Size(c);
+        else
+            ordCounts.(key) := Size(c);
+        fi;
+    od;
+    ordKeys := List(RecNames(ordCounts), Int);
+    Sort(ordKeys);
+    allInvariants[idx].elemOrdProfile := List(ordKeys,
+        o -> [o, ordCounts.(String(o))]);
+    return allInvariants[idx].elemOrdProfile;
+end;
+
+_GetClassSizes := function(idx)
+    local G, cc, cs;
+    if IsBound(allInvariants[idx].classSizes) then
+        return allInvariants[idx].classSizes;
+    fi;
+    G := _GetGroupE(idx);
+    cc := ConjugacyClasses(G);
+    cs := List(cc, Size);
+    Sort(cs);
+    allInvariants[idx].classSizes := cs;
+    return cs;
+end;
 
 _GetChiefFactorSizes := function(idx)
     local G, chief, cfSizes;
@@ -872,13 +907,31 @@ end;
 _DistinguishPair := function(idxA, idxB)
     local vA, vB;
 
-    # Level 1: classSizes (already computed in Phase B)
-    if allInvariants[idxA].classSizes <> allInvariants[idxB].classSizes then
+    # Level 1: centerSize
+    vA := _GetCenterSize(idxA);
+    vB := _GetCenterSize(idxB);
+    if vA <> vB then
+        _e2Stats.byCenterSize := _e2Stats.byCenterSize + 1;
+        return "centerSize";
+    fi;
+
+    # Level 2: elemOrdProfile
+    vA := _GetElemOrdProfile(idxA);
+    vB := _GetElemOrdProfile(idxB);
+    if vA <> vB then
+        _e2Stats.byElemOrdProfile := _e2Stats.byElemOrdProfile + 1;
+        return "elemOrdProfile";
+    fi;
+
+    # Level 3: classSizes
+    vA := _GetClassSizes(idxA);
+    vB := _GetClassSizes(idxB);
+    if vA <> vB then
         _e2Stats.byClassSizes := _e2Stats.byClassSizes + 1;
         return "classSizes";
     fi;
 
-    # Level 2: chiefFactorSizes
+    # Level 4: chiefFactorSizes
     vA := _GetChiefFactorSizes(idxA);
     vB := _GetChiefFactorSizes(idxB);
     if vA <> vB then
@@ -886,7 +939,7 @@ _DistinguishPair := function(idxA, idxB)
         return "chiefFactorSizes";
     fi;
 
-    # Level 3: derivedSeriesSizes
+    # Level 5: derivedSeriesSizes
     vA := _GetDerivedSeriesSizes(idxA);
     vB := _GetDerivedSeriesSizes(idxB);
     if vA <> vB then
@@ -894,7 +947,7 @@ _DistinguishPair := function(idxA, idxB)
         return "derivedSeriesSizes";
     fi;
 
-    # Level 4: nilpotencyClass
+    # Level 6: nilpotencyClass
     vA := _GetNilpotencyClass(idxA);
     vB := _GetNilpotencyClass(idxB);
     if vA <> vB then
@@ -902,7 +955,7 @@ _DistinguishPair := function(idxA, idxB)
         return "nilpotencyClass";
     fi;
 
-    # Level 5: numNormalSubs
+    # Level 7: numNormalSubs
     vA := _GetNumNormalSubs(idxA);
     vB := _GetNumNormalSubs(idxB);
     if vA <> vB then
@@ -910,7 +963,7 @@ _DistinguishPair := function(idxA, idxB)
         return "numNormalSubs";
     fi;
 
-    # Level 6: frattiniSize
+    # Level 8: frattiniSize
     vA := _GetFrattiniSize(idxA);
     vB := _GetFrattiniSize(idxB);
     if vA <> vB then
@@ -918,7 +971,7 @@ _DistinguishPair := function(idxA, idxB)
         return "frattiniSize";
     fi;
 
-    # Level 7: autGroupOrder
+    # Level 9: autGroupOrder
     Print("    -> autGroupOrder for (", idxA, ",", idxB,
           ") order=", allInvariants[idxA].order, "\n");
     vA := _GetAutGroupOrder(idxA);
@@ -928,7 +981,7 @@ _DistinguishPair := function(idxA, idxB)
         return "autGroupOrder";
     fi;
 
-    # Level 8: subgroupOrderProfile
+    # Level 10: subgroupOrderProfile
     Print("    -> subgroupOrderProfile for (", idxA, ",", idxB, ")\n");
     vA := _GetSubgroupOrderProfile(idxA);
     vB := _GetSubgroupOrderProfile(idxB);
@@ -937,7 +990,7 @@ _DistinguishPair := function(idxA, idxB)
         return "subgroupOrderProfile";
     fi;
 
-    # Level 9: powerMapStructure
+    # Level 11: powerMapStructure
     Print("    -> powerMapStructure for (", idxA, ",", idxB, ")\n");
     vA := _GetPowerMapStructure(idxA);
     vB := _GetPowerMapStructure(idxB);
@@ -946,7 +999,7 @@ _DistinguishPair := function(idxA, idxB)
         return "powerMapStructure";
     fi;
 
-    # Level 10: IsomorphismGroups (ultimate fallback)
+    # Level 12: IsomorphismGroups (ultimate fallback)
     Print("    -> IsomorphismGroups for (", idxA, ",", idxB, ")\n");
     vA := _GetGroupE(idxA);
     vB := _GetGroupE(idxB);
@@ -1013,6 +1066,8 @@ if Length(_e2Failures) > 0 then
 fi;
 
 AppendTo(PHASE_E_FILE, "\nE2 Summary: ", _e2PairsDone, " pairs tested\n");
+AppendTo(PHASE_E_FILE, "  centerSize: ", _e2Stats.byCenterSize, "\n");
+AppendTo(PHASE_E_FILE, "  elemOrdProfile: ", _e2Stats.byElemOrdProfile, "\n");
 AppendTo(PHASE_E_FILE, "  classSizes: ", _e2Stats.byClassSizes, "\n");
 AppendTo(PHASE_E_FILE, "  chiefFactorSizes: ", _e2Stats.byChiefFactors, "\n");
 AppendTo(PHASE_E_FILE, "  derivedSeriesSizes: ", _e2Stats.byDerivedSeries, "\n");
@@ -1026,7 +1081,9 @@ AppendTo(PHASE_E_FILE, "  IsomorphismGroups: ", _e2Stats.byIsomorphismGroups, "\
 
 Print("\nPhase E complete: all ", EXPECTED_TOTAL,
       " types verified pairwise non-isomorphic\n");
-Print("  Cascade stats: classSizes=", _e2Stats.byClassSizes,
+Print("  Cascade stats: center=", _e2Stats.byCenterSize,
+      " elemOrd=", _e2Stats.byElemOrdProfile,
+      " classSizes=", _e2Stats.byClassSizes,
       " chiefFactors=", _e2Stats.byChiefFactors,
       " derivedSeries=", _e2Stats.byDerivedSeries,
       " nilpotency=", _e2Stats.byNilpotency,
@@ -1126,13 +1183,17 @@ AppendTo(SUMMARY_FILE, "Input: ", EXPECTED_CLASSES,
          " conjugacy class representatives of subgroups of S_14\n\n");
 
 AppendTo(SUMMARY_FILE, "=== Non-conjugacy (Phase C) ===\n");
-AppendTo(SUMMARY_FILE, "All ", EXPECTED_CLASSES,
-         " groups verified pairwise non-conjugate in S_14\n");
-AppendTo(SUMMARY_FILE, "  ", _phaseCStats.nSingletons,
-         " singleton invariant buckets\n");
-AppendTo(SUMMARY_FILE, "  ", _phaseCStats.nMulti,
-         " multi-group buckets with ", _phaseCStats.nTestedPairs,
-         " pairs tested via IsConjugate, all non-conjugate\n\n");
+if _phaseCStats.skipped then
+    AppendTo(SUMMARY_FILE, "SKIPPED (SKIP_CONJUGACY = true)\n\n");
+else
+    AppendTo(SUMMARY_FILE, "All ", EXPECTED_CLASSES,
+             " groups verified pairwise non-conjugate in S_14\n");
+    AppendTo(SUMMARY_FILE, "  ", _phaseCStats.nSingletons,
+             " singleton invariant buckets\n");
+    AppendTo(SUMMARY_FILE, "  ", _phaseCStats.nMulti,
+             " multi-group buckets with ", _phaseCStats.nTestedPairs,
+             " pairs tested via IsConjugate, all non-conjugate\n\n");
+fi;
 
 AppendTo(SUMMARY_FILE, "=== Upper bound (at most ", EXPECTED_TOTAL,
          " types) ===\n");
@@ -1153,7 +1214,11 @@ AppendTo(SUMMARY_FILE, "  ", _nIdTypes,
 AppendTo(SUMMARY_FILE, "  ", _nLargeTypes,
          " large group reps: pairwise non-isomorphic\n");
 AppendTo(SUMMARY_FILE, "    * ", _e2Stats.singletons,
-         " singleton invariant buckets (unique by sigKey+exponent+centerSize+elemOrdProfile)\n");
+         " singleton invariant buckets (unique by sigKey+exponent)\n");
+AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byCenterSize,
+         " pairs distinguished by centerSize\n");
+AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byElemOrdProfile,
+         " pairs distinguished by elemOrdProfile\n");
 AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byClassSizes,
          " pairs distinguished by classSizes\n");
 AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byChiefFactors,
