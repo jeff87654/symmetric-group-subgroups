@@ -44,17 +44,6 @@ The 10,687 large groups were deduplicated using:
 
 ## Verification
 
-The result was verified through **four independent rounds**:
-
-1. **Original computation** - Partition-based method
-2. **Double check** - Independent 6-way parallel recomputation
-3. **Triple check** - Fresh start from A000638(14) conjugacy classes
-4. **Quadruple check** - Independent DP algorithm (factor IdGroup canonicalization) + exhaustive verification of all 514 isomorphism testing buckets (0 errors)
-
-See [`oeis/A174511_14_computation_report.pdf`](oeis/A174511_14_computation_report.pdf) for the full report.
-
-### Self-Contained Verification Script
-
 A self-contained GAP script is provided that anyone can run to independently verify A174511(14) = 7,766. It requires only GAP 4.12+ and the two input files — no precomputed intermediate data is trusted.
 
 ```bash
