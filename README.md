@@ -53,6 +53,31 @@ The result was verified through **four independent rounds**:
 
 See [`oeis/A174511_14_computation_report.pdf`](oeis/A174511_14_computation_report.pdf) for the full report.
 
+### Self-Contained Verification Script
+
+A self-contained GAP script is provided that anyone can run to independently verify A174511(14) = 7,766. It requires only GAP 4.12+ and the two input files — no precomputed intermediate data is trusted.
+
+```bash
+cd s14_final/verification
+python launch_verify.py        # Full verification (~1 hour, 20 GB RAM)
+```
+
+The script proves five things:
+1. The 75,154 input groups are valid subgroups of S_14
+2. They are **pairwise non-conjugate** in S_14 (Phase C)
+3. They collapse to exactly **7,766 isomorphism types** via IdGroup + verified proof maps (Phase D)
+4. These 7,766 types are **pairwise non-isomorphic** via an invariant cascade (Phase E)
+5. Therefore A174511(14) = 7,766
+
+Faster modes are available after a full run generates cached invariants:
+```gap
+TRUST_INVARIANTS := true;   # Trust Phase B invariants (~15 min)
+SKIP_CONJUGACY := true;     # Also skip non-conjugacy checks (~10 min)
+Read("verify_a174511_14.g");
+```
+
+See [`s14_final/verification/README.md`](s14_final/verification/README.md) for full documentation.
+
 ## Repository Structure
 
 ```
@@ -61,6 +86,12 @@ Partition/               - Original partition-based algorithm
   tests/                 - Test suite (41-group validation, regression tests)
 compute_s14_maxsub.g     - Maximal subgroup decomposition (GAP)
 compute_s14_maxsub.py    - Parallel worker launcher
+s14_final/               - Final verified data and proofs
+  s14_subgroups.g          - 75,154 conjugacy class representatives
+  proof_all_remapped.g     - 7,523 isomorphism proofs
+  verification/            - Self-contained verification script
+    verify_a174511_14.g    - GAP verification (Phases A-F)
+    launch_verify.py       - Python launcher
 triple_check/            - Triple check computation
   process_s14_subgroups.g  - Conjugacy class processing
   dedupe/                  - Isomorphism deduplication pipeline
