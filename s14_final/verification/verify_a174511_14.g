@@ -369,10 +369,7 @@ PrintTo(PHASE_D_FILE, "# Phase D: Isomorphism proof verification\n\n");
 # D1: Verify all 7,523 proofs
 Print("D1: Verifying ", EXPECTED_PROOFS, " isomorphism proofs...\n");
 
-MAX_HOM_ORDER := 500000;
 _nProofPass := 0;
-_nFullHom := 0;
-_nQuickCheck := 0;
 _proofFailures := [];
 
 # Group cache for proof verification
@@ -453,27 +450,30 @@ for _i in [1..Length(FV_ALL_PROOFS)] do
         continue;
     fi;
 
-    # Check 5: homomorphism / quick check
-    if _sizeG <= MAX_HOM_ORDER then
-        _phi := GroupHomomorphismByImages(_G, _H, _proofGens, _proofImgs);
-        if _phi = fail then
-            Add(_proofFailures, Concatenation("Proof ", String(_i),
-                ": GroupHomomorphismByImages returned fail, order=",
-                String(_sizeG)));
-            AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": hom check failed\n");
-            continue;
-        fi;
-        _nFullHom := _nFullHom + 1;
-    else
-        _imgGroup := Group(_proofImgs);
-        if Size(_imgGroup) <> _sizeH then
-            Add(_proofFailures, Concatenation("Proof ", String(_i),
-                ": images don't generate H, order=", String(_sizeG)));
-            AppendTo(PHASE_D_FILE, "FAIL proof ", _i,
-                     ": images don't generate H\n");
-            continue;
-        fi;
-        _nQuickCheck := _nQuickCheck + 1;
+    # Check 5: valid homomorphism
+    _phi := GroupHomomorphismByImages(_G, _H, _proofGens, _proofImgs);
+    if _phi = fail then
+        Add(_proofFailures, Concatenation("Proof ", String(_i),
+            ": GroupHomomorphismByImages returned fail, order=",
+            String(_sizeG)));
+        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": hom check failed\n");
+        continue;
+    fi;
+
+    # Check 6: injective (kernel is trivial)
+    if not IsInjective(_phi) then
+        Add(_proofFailures, Concatenation("Proof ", String(_i),
+            ": homomorphism is not injective, order=", String(_sizeG)));
+        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": not injective\n");
+        continue;
+    fi;
+
+    # Check 7: surjective (image is all of H)
+    if not IsSurjective(_phi) then
+        Add(_proofFailures, Concatenation("Proof ", String(_i),
+            ": homomorphism is not surjective, order=", String(_sizeG)));
+        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": not surjective\n");
+        continue;
     fi;
 
     _nProofPass := _nProofPass + 1;
@@ -490,8 +490,7 @@ Unbind(_proofGroupCache);
 
 AppendTo(PHASE_D_FILE, "\nD1 Summary: ", _nProofPass, "/",
          Length(FV_ALL_PROOFS), " proofs passed\n");
-AppendTo(PHASE_D_FILE, "  Full hom check: ", _nFullHom, "\n");
-AppendTo(PHASE_D_FILE, "  Quick check (large order): ", _nQuickCheck, "\n");
+AppendTo(PHASE_D_FILE, "  All proofs verified as bijective homomorphisms\n");
 
 if Length(_proofFailures) > 0 then
     Print("FATAL: ", Length(_proofFailures), " proofs failed!\n");
@@ -502,7 +501,7 @@ if Length(_proofFailures) > 0 then
 fi;
 
 Print("D1 complete: ", _nProofPass, "/", Length(FV_ALL_PROOFS),
-      " proofs passed (", _nFullHom, " full hom, ", _nQuickCheck, " quick)\n");
+      " proofs verified as bijective homomorphisms\n");
 
 # D2: Build union-find mapping
 
@@ -1143,8 +1142,7 @@ AppendTo(SUMMARY_FILE, "  ", _largeCount,
          " large groups linked by ", EXPECTED_PROOFS,
          " verified isomorphism proofs -> ", _nLargeTypes, " reps\n");
 AppendTo(SUMMARY_FILE, "  ", _nProofPass, "/", EXPECTED_PROOFS,
-         " proofs passed (", _nFullHom, " full hom check, ",
-         _nQuickCheck, " quick check)\n");
+         " proofs verified as bijective homomorphisms (injective + surjective)\n");
 AppendTo(SUMMARY_FILE, "  Total: ", _nIdTypes, " + ", _nLargeTypes,
          " = ", _nIdTypes + _nLargeTypes, "\n\n");
 
