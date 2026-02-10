@@ -184,29 +184,33 @@ else
         _inv.index := _i;
         _inv.order := Size(_G);
 
-        # sigKey: [order, derivedSize, nrCC, derivedLength, abelianInvariants]
-        _D := DerivedSubgroup(_G);
-        _derivedSize := Size(_D);
-        _inv.nrCC := NrConjugacyClasses(_G);
-        if IsSolvableGroup(_G) then
-            _derivedLength := DerivedLength(_G);
-        else
-            _derivedLength := -1;
-        fi;
-        _abi := ShallowCopy(AbelianInvariants(_G/_D));
-        Sort(_abi);
-        _inv.sigKey := [_inv.order, _derivedSize, _inv.nrCC,
-                        _derivedLength, _abi];
-
-        # Exponent
-        _inv.exponent := Exponent(_G);
-
-        # IdGroup (if compatible)
+        # IdGroup-compatible groups: only need order + IdGroup
+        # Large groups: need full sigKey + exponent for dedup
         if IsIdGroupCompatible(_inv.order) then
             _inv.idGroup := IdGroup(_G);
+            _inv.nrCC := 0;
+            _inv.sigKey := [];
+            _inv.exponent := 0;
             _idgCount := _idgCount + 1;
         else
             _inv.idGroup := fail;
+
+            # sigKey: [order, derivedSize, nrCC, derivedLength, abelianInvariants]
+            _D := DerivedSubgroup(_G);
+            _derivedSize := Size(_D);
+            _inv.nrCC := NrConjugacyClasses(_G);
+            if IsSolvableGroup(_G) then
+                _derivedLength := DerivedLength(_G);
+            else
+                _derivedLength := -1;
+            fi;
+            _abi := ShallowCopy(AbelianInvariants(_G/_D));
+            Sort(_abi);
+            _inv.sigKey := [_inv.order, _derivedSize, _inv.nrCC,
+                            _derivedLength, _abi];
+            _inv.exponent := Exponent(_G);
+            Unbind(_D);
+
             _largeCount := _largeCount + 1;
         fi;
 
@@ -227,7 +231,6 @@ else
 
         # Release group object
         Unbind(_G);
-        Unbind(_D);
     od;
 
     AppendTo(PHASE_B_FILE, "];\n");
@@ -249,14 +252,63 @@ if SKIP_CONJUGACY then
 else
 
 Print("=== PHASE C: Verify non-conjugacy ===\n\n");
-# Bucket by (order, orbProfile, efpHist) - S14-conjugacy invariants
-# These are computed here (not in Phase B) to keep Phase B lightweight
-Print("Computing S14-conjugacy invariants and bucketing...\n");
+
+# Step 1: IdGroup-compatible groups get bucketed by IdGroup (non-isomorphic => non-conjugate)
+# Only large groups (and same-IdGroup collisions) need expensive conjugacy invariants
+Print("Bucketing by IdGroup and conjugacy invariants...\n");
 
 _bucketMap := rec();
+_idgBucketMap := rec();  # temporary: IdGroup -> list of indices
+_nLargeToBucket := 0;
+
 for _i in [1..EXPECTED_CLASSES] do
     if _i mod 5000 = 0 then
         Print("  Phase C bucketing: ", _i, "/", EXPECTED_CLASSES, "\n");
+    fi;
+
+    if allInvariants[_i].idGroup <> fail then
+        # IdGroup-compatible: bucket by IdGroup string
+        _idgKey := String(allInvariants[_i].idGroup);
+        if not IsBound(_idgBucketMap.(_idgKey)) then
+            _idgBucketMap.(_idgKey) := [];
+        fi;
+        Add(_idgBucketMap.(_idgKey), _i);
+    else
+        _nLargeToBucket := _nLargeToBucket + 1;
+    fi;
+od;
+
+# IdGroup singletons go directly to main bucket map; multi-group IdGroup buckets
+# need orbit/efpHist sub-bucketing to distinguish conjugacy classes
+_nIdgSingletons := 0;
+_nIdgMulti := 0;
+_idgMultiIndices := [];  # indices needing conjugacy invariant computation
+
+for _idgKey in RecNames(_idgBucketMap) do
+    if Length(_idgBucketMap.(_idgKey)) = 1 then
+        _bkey := Concatenation("idg_", _idgKey);
+        _bucketMap.(_bkey) := _idgBucketMap.(_idgKey);
+        _nIdgSingletons := _nIdgSingletons + 1;
+    else
+        Append(_idgMultiIndices, _idgBucketMap.(_idgKey));
+        _nIdgMulti := _nIdgMulti + 1;
+    fi;
+od;
+
+Print("  IdGroup singletons: ", _nIdgSingletons, " (trivially non-conjugate)\n");
+Print("  IdGroup multi-group buckets: ", _nIdgMulti, " (",
+      Length(_idgMultiIndices), " groups need conjugacy invariants)\n");
+Print("  Large groups to bucket: ", _nLargeToBucket, "\n");
+
+# Step 2: Compute orbit/efpHist only for large groups and same-IdGroup collisions
+_needConjInv := Concatenation(_idgMultiIndices,
+    Filtered([1..EXPECTED_CLASSES], i -> allInvariants[i].idGroup = fail));
+Print("Computing conjugacy invariants for ", Length(_needConjInv), " groups...\n");
+
+for _j in [1..Length(_needConjInv)] do
+    _i := _needConjInv[_j];
+    if _j mod 5000 = 0 then
+        Print("  Phase C invariants: ", _j, "/", Length(_needConjInv), "\n");
     fi;
     _G := Group(List(subgens[_i], PermList));
     _orbs := Orbits(_G, [1..14]);
@@ -271,21 +323,23 @@ for _i in [1..EXPECTED_CLASSES] do
     Unbind(_G);
     Unbind(_cc);
 
-    # Build a compact key string
-    _bkey := Concatenation(String(allInvariants[_i].order), "_",
-                           String(_orbProfile), "_",
-                           String(_efpList));
+    # Build a compact key string (prefixed with IdGroup if applicable)
+    if allInvariants[_i].idGroup <> fail then
+        _prefix := Concatenation("idg_", String(allInvariants[_i].idGroup), "_");
+    else
+        _prefix := Concatenation("lg_", String(allInvariants[_i].order), "_");
+    fi;
+    _bkey := Concatenation(_prefix, String(_orbProfile), "_", String(_efpList));
     if Length(_bkey) > 1000 then
-        _bkey := Concatenation(String(allInvariants[_i].order), "_",
-                               String(_orbProfile), "_",
-                               String(Length(_efpList)), "_",
-                               String(allInvariants[_i].nrCC));
+        _bkey := Concatenation(_prefix, String(_orbProfile), "_",
+                               String(Length(_efpList)));
     fi;
     if not IsBound(_bucketMap.(_bkey)) then
         _bucketMap.(_bkey) := [];
     fi;
     Add(_bucketMap.(_bkey), _i);
 od;
+Unbind(_idgBucketMap);
 
 _bucketKeys := RecNames(_bucketMap);
 _nBuckets := Length(_bucketKeys);
