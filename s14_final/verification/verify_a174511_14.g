@@ -1223,20 +1223,61 @@ for _i in [1..Length(_roots)] do
              ", order:=", _inv.order);
 
     if _inv.idGroup <> fail then
-        AppendTo(FINGERPRINT_FILE, ", idGroup:=\"", String(_inv.idGroup), "\"");
+        AppendTo(FINGERPRINT_FILE, ", idGroup:=", _inv.idGroup);
         AppendTo(FINGERPRINT_FILE, ", fingerprint:=\"IdGroup\"");
     else
         AppendTo(FINGERPRINT_FILE, ", idGroup:=fail");
-        AppendTo(FINGERPRINT_FILE, ", sigKey:=", String(_inv.sigKey));
-        # Determine fingerprint description
-        _fpDesc := "sigKey_unique";
+        AppendTo(FINGERPRINT_FILE, ", sigKey:=", _inv.sigKey);
+        AppendTo(FINGERPRINT_FILE, ", exponent:=", _inv.exponent);
+
+        # Write all computed invariants (from lazy getters in Phase E)
+        if IsBound(_inv.centerSize) then
+            AppendTo(FINGERPRINT_FILE, ", centerSize:=", _inv.centerSize);
+        fi;
+        if IsBound(_inv.elemOrdProfile) then
+            AppendTo(FINGERPRINT_FILE, ", elemOrdProfile:=", _inv.elemOrdProfile);
+        fi;
+        if IsBound(_inv.classSizes) then
+            AppendTo(FINGERPRINT_FILE, ", classSizes:=", _inv.classSizes);
+        fi;
+        if IsBound(_inv.chiefFactorSizes) then
+            AppendTo(FINGERPRINT_FILE, ", chiefFactorSizes:=", _inv.chiefFactorSizes);
+        fi;
+        if IsBound(_inv.derivedSeriesSizes) then
+            AppendTo(FINGERPRINT_FILE, ", derivedSeriesSizes:=", _inv.derivedSeriesSizes);
+        fi;
+        if IsBound(_inv.nilpotencyClass) then
+            AppendTo(FINGERPRINT_FILE, ", nilpotencyClass:=", _inv.nilpotencyClass);
+        fi;
+        if IsBound(_inv.numNormalSubs) then
+            AppendTo(FINGERPRINT_FILE, ", numNormalSubs:=", _inv.numNormalSubs);
+        fi;
+        if IsBound(_inv.frattiniSize) then
+            AppendTo(FINGERPRINT_FILE, ", frattiniSize:=", _inv.frattiniSize);
+        fi;
         if IsBound(_inv.autGroupOrder) then
             AppendTo(FINGERPRINT_FILE, ", autGroupOrder:=", _inv.autGroupOrder);
-            _fpDesc := "sigKey+autGroupOrder";
         fi;
         if IsBound(_inv.subgroupOrderProfile) then
-            _fpDesc := "sigKey+subgroupOrderProfile";
+            AppendTo(FINGERPRINT_FILE, ", subgroupOrderProfile:=", _inv.subgroupOrderProfile);
         fi;
+        if IsBound(_inv.powerMapStructure) then
+            AppendTo(FINGERPRINT_FILE, ", powerMapStructure:=", _inv.powerMapStructure);
+        fi;
+
+        # Determine fingerprint level (deepest invariant needed to distinguish this type)
+        _fpDesc := "sigKey_unique";
+        if IsBound(_inv.centerSize) then _fpDesc := "centerSize"; fi;
+        if IsBound(_inv.elemOrdProfile) then _fpDesc := "elemOrdProfile"; fi;
+        if IsBound(_inv.classSizes) then _fpDesc := "classSizes"; fi;
+        if IsBound(_inv.chiefFactorSizes) then _fpDesc := "chiefFactorSizes"; fi;
+        if IsBound(_inv.derivedSeriesSizes) then _fpDesc := "derivedSeriesSizes"; fi;
+        if IsBound(_inv.nilpotencyClass) then _fpDesc := "nilpotencyClass"; fi;
+        if IsBound(_inv.numNormalSubs) then _fpDesc := "numNormalSubs"; fi;
+        if IsBound(_inv.frattiniSize) then _fpDesc := "frattiniSize"; fi;
+        if IsBound(_inv.autGroupOrder) then _fpDesc := "autGroupOrder"; fi;
+        if IsBound(_inv.subgroupOrderProfile) then _fpDesc := "subgroupOrderProfile"; fi;
+        if IsBound(_inv.powerMapStructure) then _fpDesc := "powerMapStructure"; fi;
         AppendTo(FINGERPRINT_FILE, ", fingerprint:=\"", _fpDesc, "\"");
     fi;
 
