@@ -5,470 +5,561 @@
 ##  Self-contained verification that A174511(14) = 7,766
 ##  (Number of isomorphism types of subgroups of S_14)
 ##
-##  Inputs (relative to BASE_DIR):
+##  Inputs (in s14_final/):
 ##    s14_subgroups.g       - 75,154 conjugacy class representatives
 ##    proof_all_remapped.g  - 7,523 isomorphism proofs
 ##
-##  Phases:
-##    A: Load and validate input data
-##    B: Compute invariants for all 75,154 groups
-##    C: Verify all 75,154 are pairwise non-conjugate in S_14
-##    D: Verify isomorphism proofs + build 75,154 -> 7,766 mapping
-##    E: Verify 7,766 type representatives are pairwise non-isomorphic
-##    F: Output mapping, fingerprints, and summary
+##  Input (in s14_final/verification/):
+##    type_fingerprints.g   - 7,766 type records with minimal invariant values
 ##
-##  Options (set before Read()ing this script):
-##    SKIP_CONJUGACY := true;   # skip Phase C (non-conjugacy checks)
-##    TRUST_INVARIANTS := true;  # load Phase B from phase_b_invariants.g
+##  Phases:
+##    A: Verify fingerprint invariants (7,766 representative groups)
+##    B: Verify isomorphism proofs + IdGroup unions -> upper bound
+##    C: Verify non-isomorphism from fingerprint data -> lower bound
+##    D: Verify pairwise non-conjugacy of all 75,154 classes (optional)
+##
+##  Proof structure:
+##    Phase A verifies that all invariant values in the fingerprint file
+##    are correct by recomputing them from the raw generators.
+##    Phase B verifies the isomorphism proofs and computes IdGroup for
+##    all 64,467 small groups, building a union-find that yields 7,766
+##    types (upper bound). Phase C checks that every pair of large types
+##    sharing the same order is distinguished by a verified invariant
+##    (lower bound). Phase D (optional) confirms that the 75,154 classes
+##    are pairwise non-conjugate in S14, proving A000638(14) = 75,154.
+##
+##  Fingerprint fields (cheap to expensive):
+##    derivedSize, nrCC, derivedLength, abelianInvariants,
+##    exponent, centerSize,
+##    nrInvolutions, nrElementsOfOrder3, nrElementsOfOrder4,
+##    nrElementsOfOrder6,
+##    classSizes, chiefFactorSizes, derivedSeriesSizes,
+##    nilpotencyClass, numNormalSubs, frattiniSize,
+##    autGroupOrder, subgroupOrderProfile
 ##
 ##############################################################################
 
 BASE_DIR := "/cygdrive/c/Users/jeffr/Downloads/Symmetric Groups/s14_final/";
 OUT_DIR := Concatenation(BASE_DIR, "verification/");
 
-# Output file paths
-PHASE_B_FILE := Concatenation(OUT_DIR, "phase_b_invariants.g");
-PHASE_D_FILE := Concatenation(OUT_DIR, "phase_d_proof_verification.txt");
-PHASE_E_FILE := Concatenation(OUT_DIR, "phase_e_noniso.txt");
-MAPPING_FILE := Concatenation(OUT_DIR, "class_to_type_mapping.g");
-FINGERPRINT_FILE := Concatenation(OUT_DIR, "type_fingerprints.g");
-SUMMARY_FILE := Concatenation(OUT_DIR, "verification_summary.txt");
-
-# Options (can be set before Read()ing this script)
-if not IsBound(SKIP_CONJUGACY) then
-    SKIP_CONJUGACY := false;
-fi;
-if not IsBound(TRUST_INVARIANTS) then
-    TRUST_INVARIANTS := false;
-fi;
-
-# Expected constants
 EXPECTED_CLASSES := 75154;
+EXPECTED_TYPES := 7766;
+EXPECTED_IDG_TYPES := 4602;
+EXPECTED_LARGE_TYPES := 3164;
 EXPECTED_PROOFS := 7523;
-EXPECTED_IDGROUP_TYPES := 4602;
-EXPECTED_LARGE_REPS := 3164;
-EXPECTED_TOTAL := 7766;
+
+RUN_PHASE_D := true;  # Optional: pairwise non-conjugacy (proves A000638(14) = 75,154)
+
+IsIdGroupCompatible := function(ord)
+    return ord < 2000 and not ord in [512, 768, 1024, 1536];
+end;
+
+_startTime := Runtime();
 
 Print("==================================================\n");
-Print("  A174511(14) Self-Contained Verification Script\n");
+Print("  A174511(14) Verification\n");
 Print("==================================================\n\n");
 
 ##############################################################################
-## PHASE A: Load and validate input data
+## Load input files
 ##############################################################################
 
-Print("=== PHASE A: Load and validate input data ===\n\n");
-phaseAStart := Runtime();
-
-Print("Loading s14_subgroups.g (may take ~2 min)...\n");
-subgens := ReadAsFunction(Concatenation(BASE_DIR, "s14_subgroups.g"))();;
-Print("  Loaded ", Length(subgens), " generator lists\n");
+Print("Loading s14_subgroups.g...\n");
+_loadFunc := ReadAsFunction(Concatenation(BASE_DIR, "s14_subgroups.g"));
+subgens := _loadFunc();
+Unbind(_loadFunc);
 if Length(subgens) <> EXPECTED_CLASSES then
-    Print("FATAL: Expected ", EXPECTED_CLASSES, " but got ", Length(subgens), "\n");
+    Print("FATAL: expected ", EXPECTED_CLASSES, " groups, got ",
+          Length(subgens), "\n");
     QuitGap(1);
 fi;
+Print("  Loaded ", Length(subgens), " generator lists\n");
 
 Print("Loading proof_all_remapped.g...\n");
 Read(Concatenation(BASE_DIR, "proof_all_remapped.g"));
-Print("  Loaded ", Length(FV_ALL_PROOFS), " proofs\n");
 if Length(FV_ALL_PROOFS) <> EXPECTED_PROOFS then
-    Print("FATAL: Expected ", EXPECTED_PROOFS, " proofs but got ",
+    Print("FATAL: expected ", EXPECTED_PROOFS, " proofs, got ",
           Length(FV_ALL_PROOFS), "\n");
     QuitGap(1);
 fi;
+Print("  Loaded ", Length(FV_ALL_PROOFS), " proofs\n");
 
-# Validate proof indices
-Print("Validating proof index ranges...\n");
-proofIndexOK := true;
-for _p in FV_ALL_PROOFS do
-    if _p.duplicate < 1 or _p.duplicate > EXPECTED_CLASSES then
-        Print("ERROR: duplicate index ", _p.duplicate, " out of range\n");
-        proofIndexOK := false;
-    fi;
-    if _p.representative < 1 or _p.representative > EXPECTED_CLASSES then
-        Print("ERROR: representative index ", _p.representative, " out of range\n");
-        proofIndexOK := false;
-    fi;
-    if _p.duplicate = _p.representative then
-        Print("ERROR: self-link at index ", _p.duplicate, "\n");
-        proofIndexOK := false;
-    fi;
-od;
-if not proofIndexOK then
-    Print("FATAL: Proof index validation failed\n");
+Print("Loading type_fingerprints.g...\n");
+Read(Concatenation(OUT_DIR, "type_fingerprints.g"));
+if Length(S14_TYPE_INFO) <> EXPECTED_TYPES then
+    Print("FATAL: expected ", EXPECTED_TYPES, " types, got ",
+          Length(S14_TYPE_INFO), "\n");
     QuitGap(1);
 fi;
-Print("  All proof indices valid\n");
+Print("  Loaded ", Length(S14_TYPE_INFO), " type fingerprints\n");
 
-# Verify EvalString works for permutations
-_evalOK := (EvalString("(1,2)") = (1,2)) and (EvalString("(1,2)(3,4)") = (1,2)(3,4));
-if not _evalOK then
-    Print("FATAL: EvalString does not work for permutations\n");
-    QuitGap(1);
-fi;
-Print("  EvalString verified OK\n");
+Print("Load time: ", Int((Runtime() - _startTime) / 1000), "s\n\n");
 
-Print("Phase A complete: ", Int((Runtime() - phaseAStart)/1000), "s\n\n");
-
-##############################################################################
-## PHASE B: Compute invariants for all 75,154 groups
-##############################################################################
-
-phaseBStart := Runtime();
-
-# Helper: check IdGroup compatibility
-IsIdGroupCompatible := function(order)
-    return order < 2000 and not order in [512, 768, 1024, 1536];
+# Group builder with bounded cache
+_groupCache := rec();
+_cacheSize := 0;
+_BuildGroup := function(idx)
+    local key;
+    key := Concatenation("g", String(idx));
+    if not IsBound(_groupCache.(key)) then
+        _groupCache.(key) := Group(List(subgens[idx], PermList));
+        _cacheSize := _cacheSize + 1;
+    fi;
+    return _groupCache.(key);
 end;
 
-# Storage for invariants (records indexed by group number)
-allInvariants := [];
-_idgCount := 0;
-_largeCount := 0;
+_ClearCache := function()
+    _groupCache := rec();
+    _cacheSize := 0;
+end;
 
-if TRUST_INVARIANTS then
-    Print("=== PHASE B: Loading precomputed invariants ===\n\n");
-    Print("Reading ", PHASE_B_FILE, "...\n");
-    Read(PHASE_B_FILE);
-    if not IsBound(PHASE_B_INVARIANTS) then
-        Print("FATAL: PHASE_B_INVARIANTS not found in file\n");
-        QuitGap(1);
-    fi;
-    if Length(PHASE_B_INVARIANTS) <> EXPECTED_CLASSES then
-        Print("FATAL: Expected ", EXPECTED_CLASSES, " invariant records, got ",
-              Length(PHASE_B_INVARIANTS), "\n");
-        QuitGap(1);
-    fi;
-    allInvariants := PHASE_B_INVARIANTS;
-    Unbind(PHASE_B_INVARIANTS);
-    for _i in [1..EXPECTED_CLASSES] do
-        if allInvariants[_i].idGroup <> fail then
-            _idgCount := _idgCount + 1;
+# Histogram key: element-order + fixed-point count histogram as conjugacy invariant.
+# Uses ConjugacyClasses(G) for efficiency (iterates reps, not all elements).
+# Returns a string key for record-based sub-bucketing.
+_ComputeHistogramKey := function(G)
+    local cc, hist, c, rep, o, fp, hkey, sortedKeys, parts, k, result;
+
+    cc := ConjugacyClasses(G);
+    hist := rec();
+    for c in cc do
+        rep := Representative(c);
+        o := Order(rep);
+        fp := 14 - NrMovedPoints(rep);
+        hkey := Concatenation(String(o), "_", String(fp));
+        if IsBound(hist.(hkey)) then
+            hist.(hkey) := hist.(hkey) + Size(c);
         else
-            _largeCount := _largeCount + 1;
+            hist.(hkey) := Size(c);
         fi;
     od;
-    Print("  Loaded ", EXPECTED_CLASSES, " invariant records (",
-          _idgCount, " idg, ", _largeCount, " large)\n");
-    Print("Phase B (load) time: ", Int((Runtime() - phaseBStart)/1000), "s\n\n");
 
-else
-    Print("=== PHASE B: Compute invariants for all 75,154 groups ===\n\n");
-
-    # Initialize output file
-    PrintTo(PHASE_B_FILE,
-        "# Phase B: Invariants for ", EXPECTED_CLASSES,
-        " S14 conjugacy class reps\n");
-    AppendTo(PHASE_B_FILE, "# Generated by verify_a174511_14.g\n");
-    AppendTo(PHASE_B_FILE, "PHASE_B_INVARIANTS := [\n");
-
-    for _i in [1..EXPECTED_CLASSES] do
-        # Progress
-        if _i mod 500 = 0 or _i = 1 then
-            _elapsed := Runtime() - phaseBStart;
-            if _i > 1 then
-                _eta := Int(_elapsed * (EXPECTED_CLASSES - _i) / _i / 1000);
-            else
-                _eta := 0;
-            fi;
-            Print("Phase B: group ", _i, "/", EXPECTED_CLASSES,
-                  " (", _idgCount, " idg, ", _largeCount, " large)",
-                  " ETA=", _eta, "s\n");
-        fi;
-
-        # Build group from generator lists
-        _gens := List(subgens[_i], PermList);
-        _G := Group(_gens);
-
-        _inv := rec();
-        _inv.index := _i;
-        _inv.order := Size(_G);
-
-        # IdGroup-compatible groups: only need order + IdGroup
-        # Large groups: need full sigKey + exponent for dedup
-        if IsIdGroupCompatible(_inv.order) then
-            _inv.idGroup := IdGroup(_G);
-            _inv.nrCC := 0;
-            _inv.sigKey := [];
-            _inv.exponent := 0;
-            _idgCount := _idgCount + 1;
-        else
-            _inv.idGroup := fail;
-
-            # sigKey: [order, derivedSize, nrCC, derivedLength, abelianInvariants]
-            _D := DerivedSubgroup(_G);
-            _derivedSize := Size(_D);
-            _inv.nrCC := NrConjugacyClasses(_G);
-            if IsSolvableGroup(_G) then
-                _derivedLength := DerivedLength(_G);
-            else
-                _derivedLength := -1;
-            fi;
-            _abi := ShallowCopy(AbelianInvariants(_G/_D));
-            Sort(_abi);
-            _inv.sigKey := [_inv.order, _derivedSize, _inv.nrCC,
-                            _derivedLength, _abi];
-            _inv.exponent := Exponent(_G);
-            Unbind(_D);
-
-            _largeCount := _largeCount + 1;
-        fi;
-
-        allInvariants[_i] := _inv;
-
-        # Write record to checkpoint file
-        AppendTo(PHASE_B_FILE, "rec(index:=", _i,
-                 ",order:=", _inv.order,
-                 ",nrCC:=", _inv.nrCC,
-                 ",sigKey:=", _inv.sigKey,
-                 ",exponent:=", _inv.exponent,
-                 ",idGroup:=", _inv.idGroup, ")");
-        if _i < EXPECTED_CLASSES then
-            AppendTo(PHASE_B_FILE, ",\n");
-        else
-            AppendTo(PHASE_B_FILE, "\n");
-        fi;
-
-        # Release group object
-        Unbind(_G);
+    sortedKeys := ShallowCopy(RecNames(hist));
+    Sort(sortedKeys);
+    parts := [];
+    for k in sortedKeys do
+        Add(parts, Concatenation(k, "x", String(hist.(k))));
     od;
+    result := JoinStringsWithSeparator(parts, ",");
 
-    AppendTo(PHASE_B_FILE, "];\n");
+    # Truncate + hash if too long for GAP record key (limit 1023)
+    if Length(result) > 900 then
+        result := Concatenation(result{[1..800]}, "_H", String(Length(result)));
+    fi;
 
-    Print("\nPhase B complete: ", _idgCount, " IdGroup-compatible, ",
-          _largeCount, " large\n");
-    Print("Phase B time: ", Int((Runtime() - phaseBStart)/1000), "s\n\n");
-fi;
+    return result;
+end;
 
 ##############################################################################
-## PHASE C: Verify non-conjugacy (all 75,154 pairwise non-conjugate in S_14)
+## PHASE A: Verify fingerprint invariants for 7,766 representatives
+##
+## For each type, build the representative group from raw generators and
+## recompute every invariant listed in its fingerprint record. Uses shared
+## computation: DerivedSubgroup, ConjugacyClasses, DerivedSeriesOfGroup are
+## each computed at most once per type and reused across multiple fields.
 ##############################################################################
 
-phaseCStart := Runtime();
+Print("=== PHASE A: Verify fingerprint invariants ===\n\n");
+phaseAStart := Runtime();
 
-if SKIP_CONJUGACY then
-    Print("=== PHASE C: SKIPPED (SKIP_CONJUGACY = true) ===\n\n");
-    _phaseCStats := rec(skipped := true);
-else
+_nIdgVerified := 0;
+_nLargeVerified := 0;
+_invFailures := [];
 
-Print("=== PHASE C: Verify non-conjugacy ===\n\n");
+for _ti in [1..Length(S14_TYPE_INFO)] do
+    _t := S14_TYPE_INFO[_ti];
+    _rep := _t.representative;
+    _G := _BuildGroup(_rep);
 
-# Step 1: IdGroup-compatible groups get bucketed by IdGroup (non-isomorphic => non-conjugate)
-# Only large groups (and same-IdGroup collisions) need expensive conjugacy invariants
-Print("Bucketing by IdGroup and conjugacy invariants...\n");
-
-_bucketMap := rec();
-_idgBucketMap := rec();  # temporary: IdGroup -> list of indices
-_nLargeToBucket := 0;
-
-for _i in [1..EXPECTED_CLASSES] do
-    if _i mod 5000 = 0 then
-        Print("  Phase C bucketing: ", _i, "/", EXPECTED_CLASSES, "\n");
-    fi;
-
-    if allInvariants[_i].idGroup <> fail then
-        # IdGroup-compatible: bucket by IdGroup string
-        _idgKey := String(allInvariants[_i].idGroup);
-        if not IsBound(_idgBucketMap.(_idgKey)) then
-            _idgBucketMap.(_idgKey) := [];
+    if _ti mod 200 = 0 or _ti = 1 then
+        _elapsed := Runtime() - phaseAStart;
+        if _ti > 1 then
+            _eta := Int(_elapsed * (EXPECTED_TYPES - _ti) / _ti / 1000);
+        else
+            _eta := 0;
         fi;
-        Add(_idgBucketMap.(_idgKey), _i);
-    else
-        _nLargeToBucket := _nLargeToBucket + 1;
+        Print("  Type ", _ti, "/", EXPECTED_TYPES,
+              " (", _nIdgVerified, " idg, ", _nLargeVerified, " large)",
+              " ETA=", _eta, "s\n");
     fi;
-od;
 
-# IdGroup singletons go directly to main bucket map; multi-group IdGroup buckets
-# need orbit/efpHist sub-bucketing to distinguish conjugacy classes
-_nIdgSingletons := 0;
-_nIdgMulti := 0;
-_idgMultiIndices := [];  # indices needing conjugacy invariant computation
-
-for _idgKey in RecNames(_idgBucketMap) do
-    if Length(_idgBucketMap.(_idgKey)) = 1 then
-        _bkey := Concatenation("idg_", _idgKey);
-        _bucketMap.(_bkey) := _idgBucketMap.(_idgKey);
-        _nIdgSingletons := _nIdgSingletons + 1;
-    else
-        Append(_idgMultiIndices, _idgBucketMap.(_idgKey));
-        _nIdgMulti := _nIdgMulti + 1;
-    fi;
-od;
-
-Print("  IdGroup singletons: ", _nIdgSingletons, " (trivially non-conjugate)\n");
-Print("  IdGroup multi-group buckets: ", _nIdgMulti, " (",
-      Length(_idgMultiIndices), " groups need conjugacy invariants)\n");
-Print("  Large groups to bucket: ", _nLargeToBucket, "\n");
-
-# Step 2: Compute orbit/efpHist only for large groups and same-IdGroup collisions
-_needConjInv := Concatenation(_idgMultiIndices,
-    Filtered([1..EXPECTED_CLASSES], i -> allInvariants[i].idGroup = fail));
-Print("Computing conjugacy invariants for ", Length(_needConjInv), " groups...\n");
-
-for _j in [1..Length(_needConjInv)] do
-    _i := _needConjInv[_j];
-    if _j mod 5000 = 0 then
-        Print("  Phase C invariants: ", _j, "/", Length(_needConjInv), "\n");
-    fi;
-    _G := Group(List(subgens[_i], PermList));
-    _orbs := Orbits(_G, [1..14]);
-    _orbProfile := SortedList(List(_orbs, Length));
-    _cc := ConjugacyClasses(_G);
-    _efpList := [];
-    for _c in _cc do
-        _rep := Representative(_c);
-        Add(_efpList, [Order(_rep), 14 - NrMovedPoints(_rep), Size(_c)]);
-    od;
-    Sort(_efpList);
-    Unbind(_G);
-    Unbind(_cc);
-
-    # Build a compact key string (prefixed with IdGroup if applicable)
-    if allInvariants[_i].idGroup <> fail then
-        _prefix := Concatenation("idg_", String(allInvariants[_i].idGroup), "_");
-    else
-        _prefix := Concatenation("lg_", String(allInvariants[_i].order), "_");
-    fi;
-    _bkey := Concatenation(_prefix, String(_orbProfile), "_", String(_efpList));
-    if Length(_bkey) > 1000 then
-        _bkey := Concatenation(_prefix, String(_orbProfile), "_",
-                               String(Length(_efpList)));
-    fi;
-    if not IsBound(_bucketMap.(_bkey)) then
-        _bucketMap.(_bkey) := [];
-    fi;
-    Add(_bucketMap.(_bkey), _i);
-od;
-Unbind(_idgBucketMap);
-
-_bucketKeys := RecNames(_bucketMap);
-_nBuckets := Length(_bucketKeys);
-_nSingletons := 0;
-_nMulti := 0;
-_nPairsToTest := 0;
-_multiGroups := 0;
-
-for _bk in _bucketKeys do
-    if Length(_bucketMap.(_bk)) = 1 then
-        _nSingletons := _nSingletons + 1;
-    else
-        _nMulti := _nMulti + 1;
-        _bsize := Length(_bucketMap.(_bk));
-        _nPairsToTest := _nPairsToTest + _bsize * (_bsize - 1) / 2;
-        _multiGroups := _multiGroups + _bsize;
-    fi;
-od;
-
-Print("  Total buckets: ", _nBuckets, "\n");
-Print("  Singleton buckets: ", _nSingletons, "\n");
-Print("  Multi-group buckets: ", _nMulti, " (", _multiGroups, " groups, ",
-      _nPairsToTest, " pairs)\n");
-# Test all pairs within non-singleton buckets
-_S14 := SymmetricGroup(14);
-_conjTestCount := 0;
-_conjFailures := 0;
-_testedPairs := 0;
-
-for _bk in _bucketKeys do
-    _bucket := _bucketMap.(_bk);
-    if Length(_bucket) <= 1 then
+    # Verify order
+    if Size(_G) <> _t.order then
+        Add(_invFailures, Concatenation("Type ", String(_ti),
+            " rep=", String(_rep), ": order mismatch, expected ",
+            String(_t.order), " got ", String(Size(_G))));
         continue;
     fi;
 
-    for _j in [1..Length(_bucket)] do
-        for _k in [_j+1..Length(_bucket)] do
-            _idxA := _bucket[_j];
-            _idxB := _bucket[_k];
+    if _t.idGroup <> fail then
+        # IdGroup type: verify IdGroup matches
+        _idg := IdGroup(_G);
+        if _idg <> _t.idGroup then
+            Add(_invFailures, Concatenation("Type ", String(_ti),
+                " rep=", String(_rep), ": IdGroup mismatch, expected ",
+                String(_t.idGroup), " got ", String(_idg)));
+            continue;
+        fi;
+        _nIdgVerified := _nIdgVerified + 1;
+    else
+        # Large type: verify all listed invariants using shared computation
+        _ok := true;
 
-            # Rebuild groups
-            _GA := Group(List(subgens[_idxA], PermList));
-            _GB := Group(List(subgens[_idxB], PermList));
+        # Determine which shared computations are needed
+        _needsDerived := IsBound(_t.derivedSize)
+                      or IsBound(_t.abelianInvariants);
+        _needsCC := IsBound(_t.nrCC)
+                  or IsBound(_t.nrInvolutions)
+                  or IsBound(_t.nrElementsOfOrder3)
+                  or IsBound(_t.nrElementsOfOrder4)
+                  or IsBound(_t.nrElementsOfOrder6)
+                  or IsBound(_t.classSizes);
+        _needsDerivedSeries := IsBound(_t.derivedLength)
+                            or IsBound(_t.derivedSeriesSizes);
 
-            _isConj := IsConjugate(_S14, _GA, _GB);
-            _testedPairs := _testedPairs + 1;
+        # Compute shared objects once
+        if _needsDerived then
+            _D := DerivedSubgroup(_G);
+        fi;
+        if _needsCC then
+            _cc := ConjugacyClasses(_G);
+        fi;
+        if _needsDerivedSeries then
+            _ds := DerivedSeriesOfGroup(_G);
+        fi;
 
-            if _isConj then
-                _conjFailures := _conjFailures + 1;
-                Print("FAIL: groups ", _idxA, " and ", _idxB,
-                      " are conjugate in S14!\n");
+        # derivedSize
+        if _ok and IsBound(_t.derivedSize) then
+            if Size(_D) <> _t.derivedSize then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": derivedSize mismatch, expected ",
+                    String(_t.derivedSize), " got ", String(Size(_D))));
+                _ok := false;
             fi;
+        fi;
 
-            Unbind(_GA);
-            Unbind(_GB);
-
-            if _testedPairs mod 50 = 0 then
-                Print("  Phase C: ", _testedPairs, "/", _nPairsToTest,
-                      " pairs tested, ", _conjFailures, " failures\n");
+        # nrCC
+        if _ok and IsBound(_t.nrCC) then
+            if Length(_cc) <> _t.nrCC then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": nrCC mismatch, expected ",
+                    String(_t.nrCC), " got ", String(Length(_cc))));
+                _ok := false;
             fi;
-        od;
-    od;
+        fi;
+
+        # derivedLength
+        if _ok and IsBound(_t.derivedLength) then
+            if IsSolvableGroup(_G) then
+                _computed := Length(_ds) - 1;
+            else
+                _computed := -1;
+            fi;
+            if _computed <> _t.derivedLength then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": derivedLength mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # abelianInvariants
+        if _ok and IsBound(_t.abelianInvariants) then
+            _computed := ShallowCopy(AbelianInvariants(_G/_D));
+            Sort(_computed);
+            if _computed <> _t.abelianInvariants then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": abelianInvariants mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # exponent
+        if _ok and IsBound(_t.exponent) then
+            if Exponent(_G) <> _t.exponent then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": exponent mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # centerSize
+        if _ok and IsBound(_t.centerSize) then
+            if Size(Centre(_G)) <> _t.centerSize then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": centerSize mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # nrInvolutions (elements of order 2)
+        if _ok and IsBound(_t.nrInvolutions) then
+            _computed := Sum(Filtered(_cc,
+                c -> Order(Representative(c)) = 2), Size);
+            if _computed <> _t.nrInvolutions then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": nrInvolutions mismatch, expected ",
+                    String(_t.nrInvolutions), " got ", String(_computed)));
+                _ok := false;
+            fi;
+        fi;
+
+        # nrElementsOfOrder3
+        if _ok and IsBound(_t.nrElementsOfOrder3) then
+            _computed := Sum(Filtered(_cc,
+                c -> Order(Representative(c)) = 3), Size);
+            if _computed <> _t.nrElementsOfOrder3 then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": nrElementsOfOrder3 mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # nrElementsOfOrder4
+        if _ok and IsBound(_t.nrElementsOfOrder4) then
+            _computed := Sum(Filtered(_cc,
+                c -> Order(Representative(c)) = 4), Size);
+            if _computed <> _t.nrElementsOfOrder4 then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": nrElementsOfOrder4 mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # nrElementsOfOrder6
+        if _ok and IsBound(_t.nrElementsOfOrder6) then
+            _computed := Sum(Filtered(_cc,
+                c -> Order(Representative(c)) = 6), Size);
+            if _computed <> _t.nrElementsOfOrder6 then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": nrElementsOfOrder6 mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # classSizes
+        if _ok and IsBound(_t.classSizes) then
+            _computed := SortedList(List(_cc, Size));
+            if _computed <> _t.classSizes then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": classSizes mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # chiefFactorSizes
+        if _ok and IsBound(_t.chiefFactorSizes) then
+            _cs := ChiefSeries(_G);
+            _computed := [];
+            for _j in [1..Length(_cs)-1] do
+                Add(_computed, Size(_cs[_j]) / Size(_cs[_j+1]));
+            od;
+            Sort(_computed);
+            if _computed <> _t.chiefFactorSizes then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": chiefFactorSizes mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # derivedSeriesSizes
+        if _ok and IsBound(_t.derivedSeriesSizes) then
+            _computed := List(_ds, Size);
+            if _computed <> _t.derivedSeriesSizes then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": derivedSeriesSizes mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # nilpotencyClass
+        if _ok and IsBound(_t.nilpotencyClass) then
+            if IsNilpotentGroup(_G) then
+                _computed := NilpotencyClassOfGroup(_G);
+            else
+                _computed := -1;
+            fi;
+            if _computed <> _t.nilpotencyClass then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": nilpotencyClass mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # numNormalSubs
+        if _ok and IsBound(_t.numNormalSubs) then
+            _computed := Length(NormalSubgroups(_G));
+            if _computed <> _t.numNormalSubs then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": numNormalSubs mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # frattiniSize
+        if _ok and IsBound(_t.frattiniSize) then
+            _computed := Size(FrattiniSubgroup(_G));
+            if _computed <> _t.frattiniSize then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": frattiniSize mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        # autGroupOrder
+        if _ok and IsBound(_t.autGroupOrder) then
+            _computed := Size(AutomorphismGroup(_G));
+            if _computed <> _t.autGroupOrder then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": autGroupOrder mismatch, expected ",
+                    String(_t.autGroupOrder), " got ", String(_computed)));
+                _ok := false;
+            fi;
+        fi;
+
+        # subgroupOrderProfile
+        if _ok and IsBound(_t.subgroupOrderProfile) then
+            _ccs := ConjugacyClassesSubgroups(_G);
+            _computed := SortedList(
+                List(_ccs, c -> [Size(Representative(c)), Size(c)]));
+            if _computed <> _t.subgroupOrderProfile then
+                Add(_invFailures, Concatenation("Type ", String(_ti),
+                    " rep=", String(_rep), ": subgroupOrderProfile mismatch"));
+                _ok := false;
+            fi;
+        fi;
+
+        if _ok then
+            _nLargeVerified := _nLargeVerified + 1;
+        fi;
+    fi;
+
+    # Clear cache periodically
+    if _ti mod 500 = 0 then
+        _ClearCache();
+    fi;
 od;
 
-Unbind(_S14);
-
-if _conjFailures > 0 then
-    Print("FATAL: ", _conjFailures, " conjugate pairs found!\n");
+if Length(_invFailures) > 0 then
+    Print("FATAL: ", Length(_invFailures),
+          " fingerprint verification failures!\n");
+    for _f in _invFailures do Print("  ", _f, "\n"); od;
     QuitGap(1);
 fi;
 
-Print("Phase C complete: all ", EXPECTED_CLASSES,
-      " groups verified pairwise non-conjugate\n");
-Print("  ", _nSingletons, " singleton buckets, ", _testedPairs,
-      " pairs tested via IsConjugate\n");
-Print("Phase C time: ", Int((Runtime() - phaseCStart)/1000), "s\n\n");
+Print("Phase A complete: all ", EXPECTED_TYPES,
+      " fingerprints verified\n");
+Print("  ", _nIdgVerified, " IdGroup types, ",
+      _nLargeVerified, " large types\n");
+Print("Phase A time: ", Int((Runtime() - phaseAStart) / 1000), "s\n\n");
 
-# Save Phase C stats for summary
-_phaseCStats := rec(
-    skipped := false,
-    nBuckets := _nBuckets,
-    nSingletons := _nSingletons,
-    nMulti := _nMulti,
-    nPairsToTest := _nPairsToTest,
-    nTestedPairs := _testedPairs
-);
-
-fi; # end SKIP_CONJUGACY
+_ClearCache();
 
 ##############################################################################
-## PHASE D: Verify isomorphism proofs + build mapping
+## PHASE B: Verify isomorphism proofs + IdGroup unions -> upper bound
+##
+## B1: Compute IdGroup for all 64,467 compatible groups and build union-find.
+## B2: Verify all 7,523 isomorphism proofs as bijective homomorphisms.
+## B3: Count distinct types from union-find. Must equal 7,766.
 ##############################################################################
 
-Print("=== PHASE D: Verify isomorphism proofs + build mapping ===\n\n");
-phaseDStart := Runtime();
-PrintTo(PHASE_D_FILE, "# Phase D: Isomorphism proof verification\n\n");
+Print("=== PHASE B: Verify proofs + build type mapping ===\n\n");
+phaseBStart := Runtime();
 
-# D1: Verify all 7,523 proofs
-Print("D1: Verifying ", EXPECTED_PROOFS, " isomorphism proofs...\n");
+# B1: IdGroup union-find + orbit structure precomputation
+Print("B1: Computing IdGroup + orbit structure for all groups...\n");
 
-_nProofPass := 0;
-_proofFailures := [];
+_parent := [1..EXPECTED_CLASSES];
 
-# Group cache for proof verification
-_proofGroupCache := rec();
-
-_BuildGroup := function(idx)
-    local key, grp;
-    key := Concatenation("g", String(idx));
-    if IsBound(_proofGroupCache.(key)) then
-        return _proofGroupCache.(key);
-    fi;
-    grp := Group(List(subgens[idx], PermList));
-    _proofGroupCache.(key) := grp;
-    return grp;
+_Find := function(x)
+    while _parent[x] <> x do
+        _parent[x] := _parent[_parent[x]];
+        x := _parent[x];
+    od;
+    return x;
 end;
+
+_Union := function(a, b)
+    local ra, rb;
+    ra := _Find(a); rb := _Find(b);
+    if ra <> rb then
+        if ra < rb then _parent[rb] := ra;
+        else _parent[ra] := rb; fi;
+    fi;
+end;
+
+_idgMap := rec();
+_idgCount := 0;
+_largeCount := 0;
+_orbKey := [];  # orbit structure key per class (for Phase D)
+
+for _i in [1..EXPECTED_CLASSES] do
+    _G := _BuildGroup(_i);
+    _ord := Size(_G);
+
+    # Orbit-type key: [orbSize, transitiveId] per orbit (strictly more
+    # discriminating than orbit sizes alone — same sizes but different
+    # transitive actions get different keys).  TransitiveIdentification is
+    # a library lookup for degree ≤ 48; all our orbits are degree ≤ 14.
+    _orbs := Orbits(_G, [1..14]);
+    _orbTypes := [];
+    for _orb in _orbs do
+        if Length(_orb) = 1 then
+            Add(_orbTypes, [1, 1]);
+        else
+            Add(_orbTypes, [Length(_orb),
+                TransitiveIdentification(Action(_G, _orb))]);
+        fi;
+    od;
+    Sort(_orbTypes);
+    _orbKey[_i] := String(_orbTypes);
+
+    if IsIdGroupCompatible(_ord) then
+        _idg := IdGroup(_G);
+        _key := String(_idg);
+        if IsBound(_idgMap.(_key)) then
+            _Union(_i, _idgMap.(_key));
+        else
+            _idgMap.(_key) := _i;
+        fi;
+        _idgCount := _idgCount + 1;
+    else
+        _largeCount := _largeCount + 1;
+    fi;
+    if _i mod 5000 = 0 then
+        _ClearCache();
+        Print("  B1: ", _i, "/", EXPECTED_CLASSES,
+              " (", _idgCount, " idg, ", _largeCount, " large)\n");
+    fi;
+od;
+_ClearCache();
+
+_nIdgTypes := Length(RecNames(_idgMap));
+Print("  IdGroup-compatible: ", _idgCount, " groups -> ",
+      _nIdgTypes, " unique types\n");
+if _nIdgTypes <> EXPECTED_IDG_TYPES then
+    Print("FATAL: expected ", EXPECTED_IDG_TYPES, " IdGroup types, got ",
+          _nIdgTypes, "\n");
+    QuitGap(1);
+fi;
+Print("  Large groups: ", _largeCount, "\n");
+
+# B2: Verify isomorphism proofs
+Print("\nB2: Verifying ", EXPECTED_PROOFS, " isomorphism proofs...\n");
+_proofStart := Runtime();
+_nPass := 0;
+_proofFailures := [];
 
 for _i in [1..Length(FV_ALL_PROOFS)] do
     _p := FV_ALL_PROOFS[_i];
 
     if _i mod 200 = 0 or _i <= 5 then
-        _elapsed := Runtime() - phaseDStart;
+        _elapsed := Runtime() - _proofStart;
         if _i > 1 then
             _eta := Int(_elapsed * (Length(FV_ALL_PROOFS) - _i) / _i / 1000);
         else
             _eta := 0;
         fi;
-        Print("  Proof ", _i, "/", Length(FV_ALL_PROOFS),
-              " pass=", _nProofPass, " fail=", Length(_proofFailures),
+        Print("  Proof ", _i, "/", EXPECTED_PROOFS,
+              " pass=", _nPass, " fail=", Length(_proofFailures),
               " ETA=", _eta, "s\n");
     fi;
 
@@ -480,8 +571,8 @@ for _i in [1..Length(FV_ALL_PROOFS)] do
     # Check 1: orders match
     if _sizeG <> _sizeH then
         Add(_proofFailures, Concatenation("Proof ", String(_i),
-            ": order mismatch |G|=", String(_sizeG), " |H|=", String(_sizeH)));
-        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": order mismatch\n");
+            ": order mismatch |G|=", String(_sizeG),
+            " |H|=", String(_sizeH)));
         continue;
     fi;
 
@@ -492,7 +583,6 @@ for _i in [1..Length(FV_ALL_PROOFS)] do
     if Length(_proofGens) <> Length(_proofImgs) then
         Add(_proofFailures, Concatenation("Proof ", String(_i),
             ": gens/images length mismatch"));
-        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": length mismatch\n");
         continue;
     fi;
 
@@ -500,7 +590,6 @@ for _i in [1..Length(FV_ALL_PROOFS)] do
     if not ForAll(_proofGens, g -> g in _G) then
         Add(_proofFailures, Concatenation("Proof ", String(_i),
             ": generator not in G"));
-        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": gen not in G\n");
         continue;
     fi;
 
@@ -508,7 +597,6 @@ for _i in [1..Length(FV_ALL_PROOFS)] do
     if not ForAll(_proofImgs, h -> h in _H) then
         Add(_proofFailures, Concatenation("Proof ", String(_i),
             ": image not in H"));
-        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": image not in H\n");
         continue;
     fi;
 
@@ -517,7 +605,6 @@ for _i in [1..Length(FV_ALL_PROOFS)] do
     if Size(_genGroup) <> _sizeG then
         Add(_proofFailures, Concatenation("Proof ", String(_i),
             ": gens don't generate G"));
-        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": gens don't generate G\n");
         continue;
     fi;
 
@@ -525,892 +612,549 @@ for _i in [1..Length(FV_ALL_PROOFS)] do
     _phi := GroupHomomorphismByImages(_G, _H, _proofGens, _proofImgs);
     if _phi = fail then
         Add(_proofFailures, Concatenation("Proof ", String(_i),
-            ": GroupHomomorphismByImages returned fail, order=",
-            String(_sizeG)));
-        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": hom check failed\n");
+            ": GroupHomomorphismByImages returned fail"));
         continue;
     fi;
 
-    # Check 6: injective (kernel is trivial)
+    # Check 6: injective
     if not IsInjective(_phi) then
         Add(_proofFailures, Concatenation("Proof ", String(_i),
-            ": homomorphism is not injective, order=", String(_sizeG)));
-        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": not injective\n");
+            ": not injective"));
         continue;
     fi;
 
-    # Check 7: surjective (image is all of H)
+    # Check 7: surjective
     if not IsSurjective(_phi) then
         Add(_proofFailures, Concatenation("Proof ", String(_i),
-            ": homomorphism is not surjective, order=", String(_sizeG)));
-        AppendTo(PHASE_D_FILE, "FAIL proof ", _i, ": not surjective\n");
+            ": not surjective"));
         continue;
     fi;
 
-    _nProofPass := _nProofPass + 1;
+    _nPass := _nPass + 1;
 
-    # Checkpoint
-    if _i mod 200 = 0 then
-        AppendTo(PHASE_D_FILE, "Checkpoint: ", _i, " proofs checked, ",
-                 _nProofPass, " passed\n");
-    fi;
-od;
-
-# Clear proof group cache
-Unbind(_proofGroupCache);
-
-AppendTo(PHASE_D_FILE, "\nD1 Summary: ", _nProofPass, "/",
-         Length(FV_ALL_PROOFS), " proofs passed\n");
-AppendTo(PHASE_D_FILE, "  All proofs verified as bijective homomorphisms\n");
-
-if Length(_proofFailures) > 0 then
-    Print("FATAL: ", Length(_proofFailures), " proofs failed!\n");
-    for _f in _proofFailures do
-        Print("  ", _f, "\n");
-    od;
-    QuitGap(1);
-fi;
-
-Print("D1 complete: ", _nProofPass, "/", Length(FV_ALL_PROOFS),
-      " proofs verified as bijective homomorphisms\n");
-
-# D2: Build union-find mapping
-
-Print("\nD2: Building union-find mapping...\n");
-
-# parent[i] = root representative for group i
-_parent := [1..EXPECTED_CLASSES];
-
-# Find with path compression
-_Find := function(x)
-    local root, tmp;
-    root := x;
-    while _parent[root] <> root do
-        root := _parent[root];
-    od;
-    while _parent[x] <> root do
-        tmp := _parent[x];
-        _parent[x] := root;
-        x := tmp;
-    od;
-    return root;
-end;
-
-# Union: always point to smaller index
-_Union := function(a, b)
-    local ra, rb;
-    ra := _Find(a);
-    rb := _Find(b);
-    if ra <> rb then
-        if ra < rb then
-            _parent[rb] := ra;
-        else
-            _parent[ra] := rb;
-        fi;
-    fi;
-end;
-
-# Step 1: Union groups with same IdGroup
-Print("  Unioning by IdGroup...\n");
-_idGroupMap := rec();  # "[order, id]" -> smallest index
-
-for _i in [1..EXPECTED_CLASSES] do
-    _inv := allInvariants[_i];
-    if _inv.idGroup <> fail then
-        _idKey := String(_inv.idGroup);
-        if IsBound(_idGroupMap.(_idKey)) then
-            _Union(_i, _idGroupMap.(_idKey));
-        else
-            _idGroupMap.(_idKey) := _i;
-        fi;
-    fi;
-od;
-
-_nIdGroupTypes := Length(RecNames(_idGroupMap));
-Print("  IdGroup types found: ", _nIdGroupTypes, "\n");
-
-# Step 2: Apply verified isomorphism proofs for large groups
-Print("  Applying ", Length(FV_ALL_PROOFS), " isomorphism proofs...\n");
-
-for _p in FV_ALL_PROOFS do
+    # Apply to union-find
     _Union(_p.duplicate, _p.representative);
 od;
 
-# D3: Count distinct roots
-Print("\nD3: Counting distinct types...\n");
-
-_roots := [];
-for _i in [1..EXPECTED_CLASSES] do
-    AddSet(_roots, _Find(_i));
-od;
-_nTypes := Length(_roots);
-
-Print("  Total distinct types: ", _nTypes, "\n");
-
-# Verify IdGroup/large split
-_idgRoots := [];
-_largeRoots := [];
-for _r in _roots do
-    if allInvariants[_r].idGroup <> fail then
-        AddSet(_idgRoots, _r);
-    else
-        AddSet(_largeRoots, _r);
-    fi;
-od;
-
-# Some IdGroup roots may have been unioned to a large root or vice versa.
-# Recount properly: a "type" is IdGroup if ANY member has a valid IdGroup.
-_idgTypeSet := rec();  # "[o,id]" -> root
-_largeRootSet := [];
-
-for _i in [1..EXPECTED_CLASSES] do
-    _root := _Find(_i);
-    _inv := allInvariants[_i];
-    if _inv.idGroup <> fail then
-        _idKey := String(_inv.idGroup);
-        if not IsBound(_idgTypeSet.(_idKey)) then
-            _idgTypeSet.(_idKey) := _root;
-        fi;
-    fi;
-od;
-
-_nIdTypes := Length(RecNames(_idgTypeSet));
-
-# Large types: roots that have no IdGroup member
-_idgRootValues := [];
-for _k in RecNames(_idgTypeSet) do
-    AddSet(_idgRootValues, _idgTypeSet.(_k));
-od;
-
-_nLargeTypes := 0;
-for _r in _roots do
-    if not _r in _idgRootValues then
-        _nLargeTypes := _nLargeTypes + 1;
-        Add(_largeRootSet, _r);
-    fi;
-od;
-
-Print("  IdGroup types: ", _nIdTypes, "\n");
-Print("  Large group types: ", _nLargeTypes, "\n");
-Print("  Total: ", _nIdTypes + _nLargeTypes, "\n");
-
-AppendTo(PHASE_D_FILE, "\nD3 Summary:\n");
-AppendTo(PHASE_D_FILE, "  IdGroup types: ", _nIdTypes, "\n");
-AppendTo(PHASE_D_FILE, "  Large group types: ", _nLargeTypes, "\n");
-AppendTo(PHASE_D_FILE, "  Total types: ", _nIdTypes + _nLargeTypes, "\n");
-
-if _nIdTypes <> EXPECTED_IDGROUP_TYPES then
-    Print("WARNING: Expected ", EXPECTED_IDGROUP_TYPES, " IdGroup types, got ",
-          _nIdTypes, "\n");
-fi;
-if _nLargeTypes <> EXPECTED_LARGE_REPS then
-    Print("WARNING: Expected ", EXPECTED_LARGE_REPS, " large types, got ",
-          _nLargeTypes, "\n");
-fi;
-if _nIdTypes + _nLargeTypes <> EXPECTED_TOTAL then
-    Print("FATAL: Expected ", EXPECTED_TOTAL, " total types, got ",
-          _nIdTypes + _nLargeTypes, "\n");
+if Length(_proofFailures) > 0 then
+    Print("FATAL: ", Length(_proofFailures), " proofs failed!\n");
+    for _f in _proofFailures do Print("  ", _f, "\n"); od;
     QuitGap(1);
 fi;
 
-Print("Phase D complete: ", _nTypes, " types confirmed\n");
-Print("Phase D time: ", Int((Runtime() - phaseDStart)/1000), "s\n\n");
+Print("  All ", _nPass, "/", EXPECTED_PROOFS,
+      " proofs verified as bijective homomorphisms\n");
 
-##############################################################################
-## PHASE E: Verify non-isomorphism of 7,766 types
-##############################################################################
+# B3: Count distinct types
+Print("\nB3: Counting distinct types...\n");
 
-Print("=== PHASE E: Verify non-isomorphism of ", EXPECTED_TOTAL, " types ===\n\n");
-phaseEStart := Runtime();
-PrintTo(PHASE_E_FILE, "# Phase E: Non-isomorphism verification\n\n");
-
-# E1: IdGroup types are distinct by definition
-Print("E1: ", _nIdTypes, " IdGroup types are distinct by definition\n");
-AppendTo(PHASE_E_FILE, "E1: ", _nIdTypes,
-         " IdGroup types distinct by IdGroup identifier\n\n");
-
-# E3 (early): Verify no overlap between IdGroup types and large types
-Print("E3: Verifying IdGroup/large type disjointness...\n");
-_overlapCount := 0;
-for _r in _largeRootSet do
-    _ord := allInvariants[_r].order;
-    if IsIdGroupCompatible(_ord) then
-        Print("  ERROR: Large rep ", _r, " has IdGroup-compatible order ", _ord, "\n");
-        _overlapCount := _overlapCount + 1;
-    fi;
+_rootSet := rec();
+for _i in [1..EXPECTED_CLASSES] do
+    _rootSet.(String(_Find(_i))) := true;
 od;
-if _overlapCount = 0 then
-    Print("  Confirmed: all large reps have order >= 2000 or in {512,768,1024,1536}\n");
-else
-    Print("WARNING: ", _overlapCount, " large reps with IdGroup-compatible order\n");
+_nTypes := Length(RecNames(_rootSet));
+
+Print("  Total types: ", _nTypes, "\n");
+if _nTypes <> EXPECTED_TYPES then
+    Print("FATAL: expected ", EXPECTED_TYPES, " types, got ", _nTypes, "\n");
+    QuitGap(1);
 fi;
-AppendTo(PHASE_E_FILE, "E3: ", _overlapCount,
-         " overlaps between IdGroup and large types\n\n");
 
-# E2: Large group representatives must be pairwise non-isomorphic
-Print("\nE2: Verifying ", _nLargeTypes,
-      " large group reps pairwise non-isomorphic...\n");
+Print("  UPPER BOUND VERIFIED: at most ", EXPECTED_TYPES, " types\n");
+Print("Phase B time: ", Int((Runtime() - phaseBStart) / 1000), "s\n\n");
 
-# Bucket large reps by (sigKey, exponent) from Phase B
-_largeBucketMap := rec();
-for _r in _largeRootSet do
-    _inv := allInvariants[_r];
-    _lbkey := Concatenation(String(_inv.sigKey), "_",
-                            String(_inv.exponent));
-    if not IsBound(_largeBucketMap.(_lbkey)) then
-        _largeBucketMap.(_lbkey) := [];
+_ClearCache();
+
+##############################################################################
+## PHASE C: Verify non-isomorphism from fingerprint data -> lower bound
+##
+## IdGroup types are distinct by definition (different identifiers).
+## Large types: bucket by order and confirm each pair is distinguished
+## by some invariant whose value was verified in Phase A.
+##############################################################################
+
+Print("=== PHASE C: Verify non-isomorphism ===\n\n");
+phaseCStart := Runtime();
+
+# Separate types
+_idgTypes := Filtered(S14_TYPE_INFO, t -> t.idGroup <> fail);
+_largeTypes := Filtered(S14_TYPE_INFO, t -> t.idGroup = fail);
+
+Print("  IdGroup types: ", Length(_idgTypes),
+      " (distinct by definition)\n");
+Print("  Large types: ", Length(_largeTypes),
+      " (need invariant comparison)\n");
+
+if Length(_idgTypes) <> EXPECTED_IDG_TYPES then
+    Print("FATAL: expected ", EXPECTED_IDG_TYPES,
+          " IdGroup types in fingerprints, got ", Length(_idgTypes), "\n");
+    QuitGap(1);
+fi;
+if Length(_largeTypes) <> EXPECTED_LARGE_TYPES then
+    Print("FATAL: expected ", EXPECTED_LARGE_TYPES,
+          " large types in fingerprints, got ", Length(_largeTypes), "\n");
+    QuitGap(1);
+fi;
+
+# Verify no overlap: IdGroup types have compatible orders,
+# large types have incompatible orders
+for _t in _idgTypes do
+    if not IsIdGroupCompatible(_t.order) then
+        Print("FATAL: IdGroup type ", _t.typeIndex,
+              " has non-compatible order ", _t.order, "\n");
+        QuitGap(1);
     fi;
-    Add(_largeBucketMap.(_lbkey), _r);
+od;
+for _t in _largeTypes do
+    if IsIdGroupCompatible(_t.order) then
+        Print("FATAL: Large type ", _t.typeIndex,
+              " has IdGroup-compatible order ", _t.order, "\n");
+        QuitGap(1);
+    fi;
+od;
+Print("  IdGroup/large disjointness: VERIFIED\n\n");
+
+# Bucket large types by order
+_bucketMap := rec();
+for _t in _largeTypes do
+    _bkey := String(_t.order);
+    if not IsBound(_bucketMap.(_bkey)) then
+        _bucketMap.(_bkey) := [];
+    fi;
+    Add(_bucketMap.(_bkey), _t);
 od;
 
-_lbKeys := RecNames(_largeBucketMap);
-_lnSingletons := 0;
-_lnMulti := 0;
-_lnPairs := 0;
+_bkeys := RecNames(_bucketMap);
+_nSingletons := 0;
+_nMulti := 0;
+_nPairs := 0;
+_pairFailures := [];
 
-for _lbk in _lbKeys do
-    if Length(_largeBucketMap.(_lbk)) = 1 then
-        _lnSingletons := _lnSingletons + 1;
-    else
-        _lnMulti := _lnMulti + 1;
-        _bs := Length(_largeBucketMap.(_lbk));
-        _lnPairs := _lnPairs + _bs * (_bs - 1) / 2;
-    fi;
+# Invariant fields in cascade order (matching analyze_minimal_fingerprints.py)
+_invFields := ["derivedSize", "nrCC", "derivedLength",
+               "abelianInvariants", "exponent", "centerSize",
+               "nrInvolutions", "nrElementsOfOrder3",
+               "nrElementsOfOrder4", "nrElementsOfOrder6",
+               "classSizes", "chiefFactorSizes", "derivedSeriesSizes",
+               "nilpotencyClass", "numNormalSubs", "frattiniSize",
+               "autGroupOrder", "subgroupOrderProfile"];
+
+# Stats
+_distStats := rec();
+for _fld in _invFields do
+    _distStats.(_fld) := 0;
 od;
 
-Print("  Large invariant buckets: singletons=", _lnSingletons,
-      " multi=", _lnMulti, " pairs=", _lnPairs, "\n");
-AppendTo(PHASE_E_FILE, "E2: Large rep buckets: ", _lnSingletons,
-         " singletons, ", _lnMulti, " multi (", _lnPairs, " pairs)\n\n");
-
-# Stats for summary
-_e2Stats := rec(
-    singletons := _lnSingletons,
-    byCenterSize := 0,
-    byElemOrdProfile := 0,
-    byClassSizes := 0,
-    byChiefFactors := 0,
-    byDerivedSeries := 0,
-    byNilpotency := 0,
-    byNormalSubs := 0,
-    byFrattini := 0,
-    byAutGroup := 0,
-    bySubgroupProfile := 0,
-    byIsomorphismGroups := 0,
-    byPowerMap := 0,
-    failures := 0
-);
-
-# Group cache for Phase E (bounded)
-_phaseECache := rec();
-_phaseECacheSize := 0;
-
-_GetGroupE := function(idx)
-    local key, grp;
-    key := Concatenation("g", String(idx));
-    if IsBound(_phaseECache.(key)) then
-        return _phaseECache.(key);
-    fi;
-    grp := Group(List(subgens[idx], PermList));
-    _phaseECache.(key) := grp;
-    _phaseECacheSize := _phaseECacheSize + 1;
-    # Evict if cache too large
-    if _phaseECacheSize > 200 then
-        _phaseECache := rec();
-        _phaseECache.(key) := grp;
-        _phaseECacheSize := 1;
-    fi;
-    return grp;
-end;
-
-# Helper functions for invariants (computed on demand, cached in allInvariants)
-
-_GetCenterSize := function(idx)
-    local G;
-    if IsBound(allInvariants[idx].centerSize) then
-        return allInvariants[idx].centerSize;
-    fi;
-    G := _GetGroupE(idx);
-    allInvariants[idx].centerSize := Size(Centre(G));
-    return allInvariants[idx].centerSize;
-end;
-
-_GetElemOrdProfile := function(idx)
-    local G, cc, ordCounts, c, ord, key, ordKeys;
-    if IsBound(allInvariants[idx].elemOrdProfile) then
-        return allInvariants[idx].elemOrdProfile;
-    fi;
-    G := _GetGroupE(idx);
-    cc := ConjugacyClasses(G);
-    ordCounts := rec();
-    for c in cc do
-        ord := Order(Representative(c));
-        key := String(ord);
-        if IsBound(ordCounts.(key)) then
-            ordCounts.(key) := ordCounts.(key) + Size(c);
-        else
-            ordCounts.(key) := Size(c);
-        fi;
-    od;
-    ordKeys := List(RecNames(ordCounts), Int);
-    Sort(ordKeys);
-    allInvariants[idx].elemOrdProfile := List(ordKeys,
-        o -> [o, ordCounts.(String(o))]);
-    return allInvariants[idx].elemOrdProfile;
-end;
-
-_GetClassSizes := function(idx)
-    local G, cc, cs;
-    if IsBound(allInvariants[idx].classSizes) then
-        return allInvariants[idx].classSizes;
-    fi;
-    G := _GetGroupE(idx);
-    cc := ConjugacyClasses(G);
-    cs := List(cc, Size);
-    Sort(cs);
-    allInvariants[idx].classSizes := cs;
-    return cs;
-end;
-
-_GetChiefFactorSizes := function(idx)
-    local G, chief, cfSizes;
-    if IsBound(allInvariants[idx].chiefFactorSizes) then
-        return allInvariants[idx].chiefFactorSizes;
-    fi;
-    G := _GetGroupE(idx);
-    chief := ChiefSeries(G);
-    cfSizes := [];
-    if Length(chief) > 1 then
-        cfSizes := List([1..Length(chief)-1],
-                        i -> Size(chief[i]) / Size(chief[i+1]));
-    fi;
-    Sort(cfSizes);
-    allInvariants[idx].chiefFactorSizes := cfSizes;
-    return cfSizes;
-end;
-
-_GetDerivedSeriesSizes := function(idx)
-    local G, ds;
-    if IsBound(allInvariants[idx].derivedSeriesSizes) then
-        return allInvariants[idx].derivedSeriesSizes;
-    fi;
-    G := _GetGroupE(idx);
-    ds := DerivedSeriesOfGroup(G);
-    allInvariants[idx].derivedSeriesSizes := List(ds, Size);
-    return allInvariants[idx].derivedSeriesSizes;
-end;
-
-_GetNilpotencyClass := function(idx)
-    local G;
-    if IsBound(allInvariants[idx].nilpotencyClass) then
-        return allInvariants[idx].nilpotencyClass;
-    fi;
-    G := _GetGroupE(idx);
-    if IsNilpotentGroup(G) then
-        allInvariants[idx].nilpotencyClass := NilpotencyClassOfGroup(G);
-    else
-        allInvariants[idx].nilpotencyClass := -1;
-    fi;
-    return allInvariants[idx].nilpotencyClass;
-end;
-
-_GetNumNormalSubs := function(idx)
-    local G;
-    if IsBound(allInvariants[idx].numNormalSubs) then
-        return allInvariants[idx].numNormalSubs;
-    fi;
-    G := _GetGroupE(idx);
-    allInvariants[idx].numNormalSubs := Length(NormalSubgroups(G));
-    return allInvariants[idx].numNormalSubs;
-end;
-
-_GetFrattiniSize := function(idx)
-    local G;
-    if IsBound(allInvariants[idx].frattiniSize) then
-        return allInvariants[idx].frattiniSize;
-    fi;
-    G := _GetGroupE(idx);
-    allInvariants[idx].frattiniSize := Size(FrattiniSubgroup(G));
-    return allInvariants[idx].frattiniSize;
-end;
-
-_GetAutGroupOrder := function(idx)
-    local G;
-    if IsBound(allInvariants[idx].autGroupOrder) then
-        return allInvariants[idx].autGroupOrder;
-    fi;
-    G := _GetGroupE(idx);
-    allInvariants[idx].autGroupOrder := Size(AutomorphismGroup(G));
-    return allInvariants[idx].autGroupOrder;
-end;
-
-_GetSubgroupOrderProfile := function(idx)
-    local G, ccs, prof;
-    if IsBound(allInvariants[idx].subgroupOrderProfile) then
-        return allInvariants[idx].subgroupOrderProfile;
-    fi;
-    G := _GetGroupE(idx);
-    ccs := ConjugacyClassesSubgroups(G);
-    prof := List(ccs, c -> [Size(Representative(c)), Size(c)]);
-    Sort(prof);
-    allInvariants[idx].subgroupOrderProfile := prof;
-    return prof;
-end;
-
-_GetPowerMapStructure := function(idx)
-    local G, cc, result, c, rep, o, p, img, imgClass, pair;
-    if IsBound(allInvariants[idx].powerMapStructure) then
-        return allInvariants[idx].powerMapStructure;
-    fi;
-    G := _GetGroupE(idx);
-    cc := ConjugacyClasses(G);
-    result := [];
-    for c in cc do
-        rep := Representative(c);
-        o := Order(rep);
-        for p in Filtered(PrimeDivisors(o), x -> x <= o) do
-            img := rep^p;
-            imgClass := First([1..Length(cc)], j -> img in cc[j]);
-            pair := [o, Size(c), p, Order(img), Size(cc[imgClass])];
-            Add(result, pair);
-        od;
-    od;
-    Sort(result);
-    allInvariants[idx].powerMapStructure := result;
-    return result;
-end;
-
-# Invariant cascade for distinguishing a pair
-_DistinguishPair := function(idxA, idxB)
-    local vA, vB;
-
-    # Level 1: centerSize
-    vA := _GetCenterSize(idxA);
-    vB := _GetCenterSize(idxB);
-    if vA <> vB then
-        _e2Stats.byCenterSize := _e2Stats.byCenterSize + 1;
-        return "centerSize";
-    fi;
-
-    # Level 2: elemOrdProfile
-    vA := _GetElemOrdProfile(idxA);
-    vB := _GetElemOrdProfile(idxB);
-    if vA <> vB then
-        _e2Stats.byElemOrdProfile := _e2Stats.byElemOrdProfile + 1;
-        return "elemOrdProfile";
-    fi;
-
-    # Level 3: classSizes
-    vA := _GetClassSizes(idxA);
-    vB := _GetClassSizes(idxB);
-    if vA <> vB then
-        _e2Stats.byClassSizes := _e2Stats.byClassSizes + 1;
-        return "classSizes";
-    fi;
-
-    # Level 4: chiefFactorSizes
-    vA := _GetChiefFactorSizes(idxA);
-    vB := _GetChiefFactorSizes(idxB);
-    if vA <> vB then
-        _e2Stats.byChiefFactors := _e2Stats.byChiefFactors + 1;
-        return "chiefFactorSizes";
-    fi;
-
-    # Level 5: derivedSeriesSizes
-    vA := _GetDerivedSeriesSizes(idxA);
-    vB := _GetDerivedSeriesSizes(idxB);
-    if vA <> vB then
-        _e2Stats.byDerivedSeries := _e2Stats.byDerivedSeries + 1;
-        return "derivedSeriesSizes";
-    fi;
-
-    # Level 6: nilpotencyClass
-    vA := _GetNilpotencyClass(idxA);
-    vB := _GetNilpotencyClass(idxB);
-    if vA <> vB then
-        _e2Stats.byNilpotency := _e2Stats.byNilpotency + 1;
-        return "nilpotencyClass";
-    fi;
-
-    # Level 7: numNormalSubs
-    vA := _GetNumNormalSubs(idxA);
-    vB := _GetNumNormalSubs(idxB);
-    if vA <> vB then
-        _e2Stats.byNormalSubs := _e2Stats.byNormalSubs + 1;
-        return "numNormalSubs";
-    fi;
-
-    # Level 8: frattiniSize
-    vA := _GetFrattiniSize(idxA);
-    vB := _GetFrattiniSize(idxB);
-    if vA <> vB then
-        _e2Stats.byFrattini := _e2Stats.byFrattini + 1;
-        return "frattiniSize";
-    fi;
-
-    # Level 9: autGroupOrder
-    Print("    -> autGroupOrder for (", idxA, ",", idxB,
-          ") order=", allInvariants[idxA].order, "\n");
-    vA := _GetAutGroupOrder(idxA);
-    vB := _GetAutGroupOrder(idxB);
-    if vA <> vB then
-        _e2Stats.byAutGroup := _e2Stats.byAutGroup + 1;
-        return "autGroupOrder";
-    fi;
-
-    # Level 10: subgroupOrderProfile
-    Print("    -> subgroupOrderProfile for (", idxA, ",", idxB, ")\n");
-    vA := _GetSubgroupOrderProfile(idxA);
-    vB := _GetSubgroupOrderProfile(idxB);
-    if vA <> vB then
-        _e2Stats.bySubgroupProfile := _e2Stats.bySubgroupProfile + 1;
-        return "subgroupOrderProfile";
-    fi;
-
-    # Level 11: powerMapStructure
-    Print("    -> powerMapStructure for (", idxA, ",", idxB, ")\n");
-    vA := _GetPowerMapStructure(idxA);
-    vB := _GetPowerMapStructure(idxB);
-    if vA <> vB then
-        _e2Stats.byPowerMap := _e2Stats.byPowerMap + 1;
-        return "powerMapStructure";
-    fi;
-
-    # Level 12: IsomorphismGroups (ultimate fallback)
-    Print("    -> IsomorphismGroups for (", idxA, ",", idxB, ")\n");
-    vA := _GetGroupE(idxA);
-    vB := _GetGroupE(idxB);
-    if IsomorphismGroups(vA, vB) = fail then
-        _e2Stats.byIsomorphismGroups := _e2Stats.byIsomorphismGroups + 1;
-        return "IsomorphismGroups";
-    fi;
-
-    # FAILURE: groups appear isomorphic
-    _e2Stats.failures := _e2Stats.failures + 1;
-    return fail;
-end;
-
-# Process all non-singleton large buckets
-_e2PairsDone := 0;
-_e2Failures := [];
-# Record distinguishing info for each pair (for fingerprints)
-_pairDistinguisher := rec();
-
-for _lbk in _lbKeys do
-    _lbucket := _largeBucketMap.(_lbk);
-    if Length(_lbucket) <= 1 then
+for _bk in _bkeys do
+    _bucket := _bucketMap.(_bk);
+    if Length(_bucket) = 1 then
+        _nSingletons := _nSingletons + 1;
         continue;
     fi;
+    _nMulti := _nMulti + 1;
 
-    AppendTo(PHASE_E_FILE, "Bucket: ", Length(_lbucket), " reps, order=",
-             allInvariants[_lbucket[1]].order, "\n");
+    for _j in [1..Length(_bucket)] do
+        for _k in [_j+1..Length(_bucket)] do
+            _tA := _bucket[_j];
+            _tB := _bucket[_k];
+            _nPairs := _nPairs + 1;
 
-    for _j in [1..Length(_lbucket)] do
-        for _k in [_j+1..Length(_lbucket)] do
-            _idxA := _lbucket[_j];
-            _idxB := _lbucket[_k];
-            _e2PairsDone := _e2PairsDone + 1;
-
-            _dist := _DistinguishPair(_idxA, _idxB);
-
-            if _dist = fail then
-                Print("FAIL: large reps ", _idxA, " and ", _idxB,
-                      " appear isomorphic!\n");
-                Add(_e2Failures, [_idxA, _idxB]);
-                AppendTo(PHASE_E_FILE, "  FAIL: ", _idxA, " ~ ", _idxB,
-                         " ISOMORPHIC!\n");
-            else
-                AppendTo(PHASE_E_FILE, "  PASS: ", _idxA, " !~ ", _idxB,
-                         " via ", _dist, "\n");
-                # Store distinguisher for the pair
-                _pdKey := Concatenation("p", String(_idxA), "_", String(_idxB));
-                if Length(_pdKey) <= 1000 then
-                    _pairDistinguisher.(_pdKey) := _dist;
+            _distinguished := false;
+            for _fld in _invFields do
+                if IsBound(_tA.(_fld)) and IsBound(_tB.(_fld)) then
+                    if _tA.(_fld) <> _tB.(_fld) then
+                        _distinguished := true;
+                        _distStats.(_fld) := _distStats.(_fld) + 1;
+                        break;
+                    fi;
                 fi;
-            fi;
+            od;
 
-            if _e2PairsDone mod 20 = 0 then
-                Print("  E2 progress: ", _e2PairsDone, "/", _lnPairs,
-                      " pairs\n");
+            if not _distinguished then
+                Add(_pairFailures, Concatenation(
+                    "Types ", String(_tA.typeIndex), " and ",
+                    String(_tB.typeIndex), " (reps ",
+                    String(_tA.representative), ",",
+                    String(_tB.representative),
+                    "): not distinguished by any fingerprint invariant"));
             fi;
         od;
     od;
 od;
 
-if Length(_e2Failures) > 0 then
-    Print("FATAL: ", Length(_e2Failures), " large rep pairs appear isomorphic!\n");
+if Length(_pairFailures) > 0 then
+    Print("FATAL: ", Length(_pairFailures),
+          " pairs not distinguished!\n");
+    for _f in _pairFailures do Print("  ", _f, "\n"); od;
     QuitGap(1);
 fi;
 
-AppendTo(PHASE_E_FILE, "\nE2 Summary: ", _e2PairsDone, " pairs tested\n");
-AppendTo(PHASE_E_FILE, "  centerSize: ", _e2Stats.byCenterSize, "\n");
-AppendTo(PHASE_E_FILE, "  elemOrdProfile: ", _e2Stats.byElemOrdProfile, "\n");
-AppendTo(PHASE_E_FILE, "  classSizes: ", _e2Stats.byClassSizes, "\n");
-AppendTo(PHASE_E_FILE, "  chiefFactorSizes: ", _e2Stats.byChiefFactors, "\n");
-AppendTo(PHASE_E_FILE, "  derivedSeriesSizes: ", _e2Stats.byDerivedSeries, "\n");
-AppendTo(PHASE_E_FILE, "  nilpotencyClass: ", _e2Stats.byNilpotency, "\n");
-AppendTo(PHASE_E_FILE, "  numNormalSubs: ", _e2Stats.byNormalSubs, "\n");
-AppendTo(PHASE_E_FILE, "  frattiniSize: ", _e2Stats.byFrattini, "\n");
-AppendTo(PHASE_E_FILE, "  autGroupOrder: ", _e2Stats.byAutGroup, "\n");
-AppendTo(PHASE_E_FILE, "  subgroupOrderProfile: ", _e2Stats.bySubgroupProfile, "\n");
-AppendTo(PHASE_E_FILE, "  powerMapStructure: ", _e2Stats.byPowerMap, "\n");
-AppendTo(PHASE_E_FILE, "  IsomorphismGroups: ", _e2Stats.byIsomorphismGroups, "\n");
-
-Print("\nPhase E complete: all ", EXPECTED_TOTAL,
-      " types verified pairwise non-isomorphic\n");
-Print("  Cascade stats: center=", _e2Stats.byCenterSize,
-      " elemOrd=", _e2Stats.byElemOrdProfile,
-      " classSizes=", _e2Stats.byClassSizes,
-      " chiefFactors=", _e2Stats.byChiefFactors,
-      " derivedSeries=", _e2Stats.byDerivedSeries,
-      " nilpotency=", _e2Stats.byNilpotency,
-      " normalSubs=", _e2Stats.byNormalSubs,
-      " frattini=", _e2Stats.byFrattini,
-      " aut=", _e2Stats.byAutGroup,
-      " subProfile=", _e2Stats.bySubgroupProfile,
-      " powerMap=", _e2Stats.byPowerMap,
-      " iso=", _e2Stats.byIsomorphismGroups, "\n");
-Print("Phase E time: ", Int((Runtime() - phaseEStart)/1000), "s\n\n");
-
-##############################################################################
-## PHASE F: Output mapping, fingerprints, and summary
-##############################################################################
-
-Print("=== PHASE F: Output results ===\n\n");
-phaseFStart := Runtime();
-
-# F1: class_to_type_mapping.g
-Print("F1: Writing class-to-type mapping...\n");
-
-# Assign type indices: sort roots, map root -> type index
-Sort(_roots);
-_rootToType := rec();
-for _i in [1..Length(_roots)] do
-    _rootToType.(String(_roots[_i])) := _i;
+Print("  Singleton order buckets: ", _nSingletons, "\n");
+Print("  Multi-type order buckets: ", _nMulti, " (",
+      _nPairs, " pairs checked)\n");
+Print("  Distinguishing invariant breakdown:\n");
+for _fld in _invFields do
+    if _distStats.(_fld) > 0 then
+        Print("    ", _fld, ": ", _distStats.(_fld), "\n");
+    fi;
 od;
 
-PrintTo(MAPPING_FILE, "# Class-to-type mapping for S14\n");
-AppendTo(MAPPING_FILE, "# S14_CLASS_TO_TYPE[i] = type index (1..",
-         Length(_roots), ") for conjugacy class i\n\n");
-AppendTo(MAPPING_FILE, "S14_CLASS_TO_TYPE := [\n");
+Print("\n  LOWER BOUND VERIFIED: at least ", EXPECTED_TYPES, " types\n");
+Print("Phase C time: ", Int((Runtime() - phaseCStart) / 1000), "s\n\n");
+
+##############################################################################
+## PHASE D: Verify conjugacy class completeness (optional)
+##
+## Confirms A000638(14) = 75,154 by verifying that all 75,154 representatives
+## are pairwise non-conjugate in S14.
+##
+## Algorithm (3-level cascade):
+##   1. Build type buckets from Phase B's union-find (7,766 buckets)
+##   2. L1: Sub-bucket by orbit types ([size, transitiveId] per orbit)
+##   3. L2: Sub-bucket by element-order + fixed-point histogram (via
+##          ConjugacyClasses, for groups with |G| <= MAX_HISTOGRAM_ORDER)
+##   4. L3: Run IsConjugate(S14, G, H) on remaining same-histogram pairs
+##   5. If ANY pair IS conjugate -> FATAL (two "distinct" classes are the same)
+##############################################################################
+
+if RUN_PHASE_D then
+    Print("=== PHASE D: Verify conjugacy class completeness ===\n\n");
+    phaseDStart := Runtime();
+
+    _S14 := SymmetricGroup(14);
+
+    # Build type buckets from union-find
+    _typeBuckets := rec();
+    for _i in [1..EXPECTED_CLASSES] do
+        _root := String(_Find(_i));
+        if not IsBound(_typeBuckets.(_root)) then
+            _typeBuckets.(_root) := [];
+        fi;
+        Add(_typeBuckets.(_root), _i);
+    od;
+
+    _typeRoots := ShallowCopy(RecNames(_typeBuckets));
+    Sort(_typeRoots);
+
+    # Statistics — 3-level cascade
+    _nSingletonTypes := 0;       # types with only 1 class
+    _nMultiTypes := 0;           # types with 2+ classes
+    _nOrbitTypeSplit := 0;       # pairs eliminated by orbit types (L1)
+    _nHistogramSplit := 0;       # pairs eliminated by histogram (L2)
+    _nConjTests := 0;           # actual IsConjugate calls (L3)
+    _conjFailures := [];
+    _maxSubBucketL1 := 0;       # largest L1 sub-bucket
+    _maxSubBucketL2 := 0;       # largest L2 sub-bucket
+    _nHistogramsComputed := 0;   # total histogram computations
+
+    # Per-L1-bucket cost/benefit log:
+    #   Each entry: [groupOrder, L1size, histMs, pairsSaved, pairsRemaining]
+    _histLog := [];
+
+    for _ri in [1..Length(_typeRoots)] do
+        _root := _typeRoots[_ri];
+        _classes := _typeBuckets.(_root);
+
+        if Length(_classes) = 1 then
+            _nSingletonTypes := _nSingletonTypes + 1;
+            continue;
+        fi;
+        _nMultiTypes := _nMultiTypes + 1;
+
+        _totalPairsThisType := Length(_classes) * (Length(_classes) - 1) / 2;
+        _pairsAfterL1 := 0;
+
+        # Per-type timing for large types
+        if Length(_classes) >= 50 then
+            _bucketStart := Runtime();
+        fi;
+
+        # ---- Level 1: Sub-bucket by orbit types (precomputed in B1) ----
+        _orbBuckets := rec();
+        for _ci in _classes do
+            _okey := _orbKey[_ci];
+            if not IsBound(_orbBuckets.(_okey)) then
+                _orbBuckets.(_okey) := [];
+            fi;
+            Add(_orbBuckets.(_okey), _ci);
+        od;
+
+        for _ok in RecNames(_orbBuckets) do
+            _L1bucket := _orbBuckets.(_ok);
+            if Length(_L1bucket) < 2 then continue; fi;
+            _L1pairs := Length(_L1bucket) * (Length(_L1bucket) - 1) / 2;
+            _pairsAfterL1 := _pairsAfterL1 + _L1pairs;
+
+            if Length(_L1bucket) > _maxSubBucketL1 then
+                _maxSubBucketL1 := Length(_L1bucket);
+            fi;
+
+            # ---- Level 2: Sub-bucket by element histogram (always) ----
+            _histStart := Runtime();
+            _histBuckets := rec();
+            _sampleOrd := 0;
+            for _ci in _L1bucket do
+                _G := _BuildGroup(_ci);
+                if _sampleOrd = 0 then _sampleOrd := Size(_G); fi;
+                _hkey := _ComputeHistogramKey(_G);
+                _nHistogramsComputed := _nHistogramsComputed + 1;
+                if not IsBound(_histBuckets.(_hkey)) then
+                    _histBuckets.(_hkey) := [];
+                fi;
+                Add(_histBuckets.(_hkey), _ci);
+            od;
+            _histElapsed := Runtime() - _histStart;
+
+            # Count pairs remaining after L2
+            _pairsAfterL2 := 0;
+            for _hk in RecNames(_histBuckets) do
+                _L2bucket := _histBuckets.(_hk);
+                if Length(_L2bucket) < 2 then continue; fi;
+                _pairsAfterL2 := _pairsAfterL2
+                    + Length(_L2bucket) * (Length(_L2bucket) - 1) / 2;
+
+                if Length(_L2bucket) > _maxSubBucketL2 then
+                    _maxSubBucketL2 := Length(_L2bucket);
+                fi;
+
+                # ---- Level 3: IsConjugate for L2 sub-bucket ----
+                for _j in [1..Length(_L2bucket)] do
+                    for _k in [_j+1..Length(_L2bucket)] do
+                        _G := _BuildGroup(_L2bucket[_j]);
+                        _H := _BuildGroup(_L2bucket[_k]);
+                        _nConjTests := _nConjTests + 1;
+                        if IsConjugate(_S14, _G, _H) then
+                            Add(_conjFailures, Concatenation(
+                                "Classes ",
+                                String(_L2bucket[_j]), " and ",
+                                String(_L2bucket[_k]),
+                                " are conjugate (type root=",
+                                _root, ")"));
+                        fi;
+                    od;
+                od;
+            od;
+
+            _savedByHist := _L1pairs - _pairsAfterL2;
+            _nHistogramSplit := _nHistogramSplit + _savedByHist;
+
+            # Log this L1 sub-bucket's cost/benefit
+            Add(_histLog, [_sampleOrd, Length(_L1bucket),
+                           _histElapsed, _savedByHist, _pairsAfterL2]);
+        od;
+
+        _nOrbitTypeSplit := _nOrbitTypeSplit
+            + (_totalPairsThisType - _pairsAfterL1);
+
+        # Per-type timing and progress
+        if Length(_classes) >= 50 then
+            Print("  Type ", _ri, "/", Length(_typeRoots),
+                  " (", Length(_classes), " classes, ",
+                  Int((Runtime() - _bucketStart) / 1000), "s, ",
+                  _nConjTests, " conj tests cumulative)\n");
+        elif _ri mod 500 = 0 then
+            Print("  Type ", _ri, "/", Length(_typeRoots),
+                  " (", _nConjTests, " conj tests, ",
+                  Int((Runtime() - phaseDStart) / 1000), "s elapsed)\n");
+        fi;
+
+        _ClearCache();
+    od;
+
+    # Results
+    if Length(_conjFailures) > 0 then
+        Print("FATAL: ", Length(_conjFailures),
+              " conjugate pairs found!\n");
+        for _f in _conjFailures do Print("  ", _f, "\n"); od;
+        QuitGap(1);
+    fi;
+
+    _totalPossiblePairs := 0;
+    for _root in _typeRoots do
+        _n := Length(_typeBuckets.(_root));
+        _totalPossiblePairs := _totalPossiblePairs + _n * (_n - 1) / 2;
+    od;
+
+    Print("\n  Phase D Statistics:\n");
+    Print("  Singleton types (1 class): ", _nSingletonTypes, "\n");
+    Print("  Multi-class types: ", _nMultiTypes, "\n");
+    Print("  Total pairs across all type buckets: ",
+          _totalPossiblePairs, "\n");
+    Print("  L1 — Pairs eliminated by orbit types: ",
+          _nOrbitTypeSplit, "\n");
+    Print("  L2 — Pairs eliminated by histogram: ",
+          _nHistogramSplit, "\n");
+    Print("  L3 — Pairwise IsConjugate tests: ", _nConjTests, "\n");
+    Print("  Largest L1 sub-bucket (orbit type): ",
+          _maxSubBucketL1, "\n");
+    Print("  Largest L2 sub-bucket (histogram): ",
+          _maxSubBucketL2, "\n");
+    Print("  Histograms computed: ", _nHistogramsComputed, "\n");
+    Print("  Conjugate pairs found: 0\n");
+
+    # ---- Histogram cost/benefit report ----
+    # _histLog entries: [groupOrder, L1size, histMs, pairsSaved, pairsRemaining]
+    Print("\n  Histogram cost/benefit analysis (",
+          Length(_histLog), " L1 sub-buckets):\n");
+
+    # Aggregate by order range: [0,100], (100,1000], (1000,10000], (10000,+inf)
+    _orderRanges := [[0, 100], [101, 1000], [1001, 10000],
+                     [10001, 100000], [100001, infinity]];
+    _rangeLabels := ["1-100", "101-1K", "1K-10K", "10K-100K", "100K+"];
+
+    for _rIdx in [1..Length(_orderRanges)] do
+        _lo := _orderRanges[_rIdx][1];
+        _hi := _orderRanges[_rIdx][2];
+        _rEntries := Filtered(_histLog,
+            e -> e[1] >= _lo and e[1] <= _hi);
+        if Length(_rEntries) = 0 then continue; fi;
+
+        _rBuckets := Length(_rEntries);
+        _rHistograms := Sum(_rEntries, e -> e[2]);
+        _rTimeMs := Sum(_rEntries, e -> e[3]);
+        _rSaved := Sum(_rEntries, e -> e[4]);
+        _rRemaining := Sum(_rEntries, e -> e[5]);
+        _rBeneficial := Length(Filtered(_rEntries, e -> e[4] > 0));
+        _rWasted := _rBuckets - _rBeneficial;
+
+        Print("    Order ", _rangeLabels[_rIdx], ": ",
+              _rBuckets, " L1 buckets, ",
+              _rHistograms, " histograms in ", _rTimeMs, "ms, ",
+              _rSaved, " pairs saved, ",
+              _rRemaining, " remaining (",
+              _rBeneficial, " beneficial, ",
+              _rWasted, " wasted)\n");
+    od;
+
+    # Show the most expensive histogram calls
+    SortBy(_histLog, e -> -e[3]);
+    _nShow := Minimum(10, Length(_histLog));
+    if _nShow > 0 then
+        Print("\n  Top ", _nShow, " most expensive histogram calls:\n");
+        Print("    [order, L1size, histMs, pairsSaved, pairsRemaining]\n");
+        for _si in [1.._nShow] do
+            Print("    ", _histLog[_si], "\n");
+        od;
+    fi;
+
+    # Show the largest L2 sub-buckets (biggest IsConjugate workloads)
+    SortBy(_histLog, e -> -e[5]);
+    _nShow := Minimum(10, Length(Filtered(_histLog, e -> e[5] > 0)));
+    if _nShow > 0 then
+        Print("\n  Top ", _nShow,
+              " L1 buckets with most remaining pairs after histogram:\n");
+        Print("    [order, L1size, histMs, pairsSaved, pairsRemaining]\n");
+        for _si in [1.._nShow] do
+            if _histLog[_si][5] = 0 then break; fi;
+            Print("    ", _histLog[_si], "\n");
+        od;
+    fi;
+
+    Print("\n  A000638(14) = ", EXPECTED_CLASSES, " VERIFIED\n");
+    Print("Phase D time: ", Int((Runtime() - phaseDStart) / 1000), "s\n\n");
+
+    _ClearCache();
+fi;
+
+##############################################################################
+## Write class-to-type mapping
+##
+## Maps each of the 75,154 conjugacy class indices to its type index (1..7766)
+## using the union-find from Phase B and the type representatives from the
+## fingerprint file.
+##############################################################################
+
+Print("Writing class-to-type mapping...\n");
+_mapStart := Runtime();
+
+# Build root -> typeIndex lookup from fingerprint representatives
+_rootToType := rec();
+for _ti in [1..Length(S14_TYPE_INFO)] do
+    _rep := S14_TYPE_INFO[_ti].representative;
+    _root := String(_Find(_rep));
+    _rootToType.(_root) := _ti;
+od;
+
+# Verify every root has a type
+_unmapped := 0;
+for _i in [1..EXPECTED_CLASSES] do
+    _root := String(_Find(_i));
+    if not IsBound(_rootToType.(_root)) then
+        _unmapped := _unmapped + 1;
+    fi;
+od;
+if _unmapped > 0 then
+    Print("WARNING: ", _unmapped, " classes have no type mapping!\n");
+fi;
+
+# Write mapping file
+_mapFile := Concatenation(OUT_DIR, "class_to_type.g");
+PrintTo(_mapFile,
+    "##\n",
+    "## class_to_type.g\n",
+    "##\n",
+    "## AUTO-GENERATED by verify_a174511_14.g\n",
+    "##\n",
+    "## CLASS_TO_TYPE[i] = type index (1..7766) for conjugacy class i\n",
+    "## Type details are in S14_TYPE_INFO[typeIndex] from type_fingerprints.g\n",
+    "##\n\n",
+    "CLASS_TO_TYPE := [\n");
 
 for _i in [1..EXPECTED_CLASSES] do
-    _root := _Find(_i);
-    _typeIdx := _rootToType.(String(_root));
+    _root := String(_Find(_i));
+    _ti := _rootToType.(_root);
     if _i < EXPECTED_CLASSES then
-        AppendTo(MAPPING_FILE, _typeIdx, ",\n");
+        AppendTo(_mapFile, _ti, ",\n");
     else
-        AppendTo(MAPPING_FILE, _typeIdx, "\n");
+        AppendTo(_mapFile, _ti, "\n");
     fi;
 od;
-AppendTo(MAPPING_FILE, "];\n");
+AppendTo(_mapFile, "];\n");
 
-Print("  Written ", EXPECTED_CLASSES, " entries\n");
-
-# F2: type_fingerprints.g
-Print("F2: Writing type fingerprints...\n");
-
-PrintTo(FINGERPRINT_FILE, "# Type fingerprints for S14\n");
-AppendTo(FINGERPRINT_FILE, "# ", Length(_roots), " types total\n\n");
-AppendTo(FINGERPRINT_FILE, "S14_TYPE_INFO := [\n");
-
-for _i in [1..Length(_roots)] do
-    _rep := _roots[_i];
-    _inv := allInvariants[_rep];
-
-    AppendTo(FINGERPRINT_FILE, "  rec(typeIndex:=", _i,
-             ", representative:=", _rep,
-             ", order:=", _inv.order);
-
-    if _inv.idGroup <> fail then
-        AppendTo(FINGERPRINT_FILE, ", idGroup:=", _inv.idGroup);
-        AppendTo(FINGERPRINT_FILE, ", fingerprint:=\"IdGroup\"");
-    else
-        AppendTo(FINGERPRINT_FILE, ", idGroup:=fail");
-        AppendTo(FINGERPRINT_FILE, ", sigKey:=", _inv.sigKey);
-        AppendTo(FINGERPRINT_FILE, ", exponent:=", _inv.exponent);
-
-        # Write all computed invariants (from lazy getters in Phase E)
-        if IsBound(_inv.centerSize) then
-            AppendTo(FINGERPRINT_FILE, ", centerSize:=", _inv.centerSize);
-        fi;
-        if IsBound(_inv.elemOrdProfile) then
-            AppendTo(FINGERPRINT_FILE, ", elemOrdProfile:=", _inv.elemOrdProfile);
-        fi;
-        if IsBound(_inv.classSizes) then
-            AppendTo(FINGERPRINT_FILE, ", classSizes:=", _inv.classSizes);
-        fi;
-        if IsBound(_inv.chiefFactorSizes) then
-            AppendTo(FINGERPRINT_FILE, ", chiefFactorSizes:=", _inv.chiefFactorSizes);
-        fi;
-        if IsBound(_inv.derivedSeriesSizes) then
-            AppendTo(FINGERPRINT_FILE, ", derivedSeriesSizes:=", _inv.derivedSeriesSizes);
-        fi;
-        if IsBound(_inv.nilpotencyClass) then
-            AppendTo(FINGERPRINT_FILE, ", nilpotencyClass:=", _inv.nilpotencyClass);
-        fi;
-        if IsBound(_inv.numNormalSubs) then
-            AppendTo(FINGERPRINT_FILE, ", numNormalSubs:=", _inv.numNormalSubs);
-        fi;
-        if IsBound(_inv.frattiniSize) then
-            AppendTo(FINGERPRINT_FILE, ", frattiniSize:=", _inv.frattiniSize);
-        fi;
-        if IsBound(_inv.autGroupOrder) then
-            AppendTo(FINGERPRINT_FILE, ", autGroupOrder:=", _inv.autGroupOrder);
-        fi;
-        if IsBound(_inv.subgroupOrderProfile) then
-            AppendTo(FINGERPRINT_FILE, ", subgroupOrderProfile:=", _inv.subgroupOrderProfile);
-        fi;
-        if IsBound(_inv.powerMapStructure) then
-            AppendTo(FINGERPRINT_FILE, ", powerMapStructure:=", _inv.powerMapStructure);
-        fi;
-
-        # Determine fingerprint level (deepest invariant needed to distinguish this type)
-        _fpDesc := "sigKey_unique";
-        if IsBound(_inv.centerSize) then _fpDesc := "centerSize"; fi;
-        if IsBound(_inv.elemOrdProfile) then _fpDesc := "elemOrdProfile"; fi;
-        if IsBound(_inv.classSizes) then _fpDesc := "classSizes"; fi;
-        if IsBound(_inv.chiefFactorSizes) then _fpDesc := "chiefFactorSizes"; fi;
-        if IsBound(_inv.derivedSeriesSizes) then _fpDesc := "derivedSeriesSizes"; fi;
-        if IsBound(_inv.nilpotencyClass) then _fpDesc := "nilpotencyClass"; fi;
-        if IsBound(_inv.numNormalSubs) then _fpDesc := "numNormalSubs"; fi;
-        if IsBound(_inv.frattiniSize) then _fpDesc := "frattiniSize"; fi;
-        if IsBound(_inv.autGroupOrder) then _fpDesc := "autGroupOrder"; fi;
-        if IsBound(_inv.subgroupOrderProfile) then _fpDesc := "subgroupOrderProfile"; fi;
-        if IsBound(_inv.powerMapStructure) then _fpDesc := "powerMapStructure"; fi;
-        AppendTo(FINGERPRINT_FILE, ", fingerprint:=\"", _fpDesc, "\"");
-    fi;
-
-    if _i < Length(_roots) then
-        AppendTo(FINGERPRINT_FILE, "),\n");
-    else
-        AppendTo(FINGERPRINT_FILE, ")\n");
-    fi;
+# Print type size distribution summary
+_typeSizes := List([1..EXPECTED_TYPES], i -> 0);
+for _i in [1..EXPECTED_CLASSES] do
+    _root := String(_Find(_i));
+    _ti := _rootToType.(_root);
+    _typeSizes[_ti] := _typeSizes[_ti] + 1;
 od;
-AppendTo(FINGERPRINT_FILE, "];\n");
+Sort(_typeSizes);
 
-Print("  Written ", Length(_roots), " type fingerprints\n");
-
-# F3: verification_summary.txt
-Print("F3: Writing verification summary...\n");
-
-_totalTime := Runtime() - phaseAStart;
-
-PrintTo(SUMMARY_FILE, "A174511(14) = ", EXPECTED_TOTAL, "  VERIFIED\n\n");
-AppendTo(SUMMARY_FILE, "Input: ", EXPECTED_CLASSES,
-         " conjugacy class representatives of subgroups of S_14\n");
-if TRUST_INVARIANTS then
-    AppendTo(SUMMARY_FILE,
-        "Phase B invariants: TRUSTED (loaded from precomputed file)\n");
-else
-    AppendTo(SUMMARY_FILE,
-        "Phase B invariants: RECOMPUTED from scratch\n");
-fi;
-AppendTo(SUMMARY_FILE, "\n");
-
-AppendTo(SUMMARY_FILE, "=== Non-conjugacy (Phase C) ===\n");
-if _phaseCStats.skipped then
-    AppendTo(SUMMARY_FILE, "SKIPPED (SKIP_CONJUGACY = true)\n\n");
-else
-    AppendTo(SUMMARY_FILE, "All ", EXPECTED_CLASSES,
-             " groups verified pairwise non-conjugate in S_14\n");
-    AppendTo(SUMMARY_FILE, "  ", _phaseCStats.nSingletons,
-             " singleton invariant buckets\n");
-    AppendTo(SUMMARY_FILE, "  ", _phaseCStats.nMulti,
-             " multi-group buckets with ", _phaseCStats.nTestedPairs,
-             " pairs tested via IsConjugate, all non-conjugate\n\n");
-fi;
-
-AppendTo(SUMMARY_FILE, "=== Upper bound (at most ", EXPECTED_TOTAL,
-         " types) ===\n");
-AppendTo(SUMMARY_FILE, "  ", _idgCount, " groups classified by IdGroup -> ",
-         _nIdTypes, " unique types\n");
-AppendTo(SUMMARY_FILE, "  ", _largeCount,
-         " large groups linked by ", EXPECTED_PROOFS,
-         " verified isomorphism proofs -> ", _nLargeTypes, " reps\n");
-AppendTo(SUMMARY_FILE, "  ", _nProofPass, "/", EXPECTED_PROOFS,
-         " proofs verified as bijective homomorphisms (injective + surjective)\n");
-AppendTo(SUMMARY_FILE, "  Total: ", _nIdTypes, " + ", _nLargeTypes,
-         " = ", _nIdTypes + _nLargeTypes, "\n\n");
-
-AppendTo(SUMMARY_FILE, "=== Lower bound (at least ", EXPECTED_TOTAL,
-         " types) ===\n");
-AppendTo(SUMMARY_FILE, "  ", _nIdTypes,
-         " IdGroup types: distinct by IdGroup identifier\n");
-AppendTo(SUMMARY_FILE, "  ", _nLargeTypes,
-         " large group reps: pairwise non-isomorphic\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.singletons,
-         " singleton invariant buckets (unique by sigKey+exponent)\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byCenterSize,
-         " pairs distinguished by centerSize\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byElemOrdProfile,
-         " pairs distinguished by elemOrdProfile\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byClassSizes,
-         " pairs distinguished by classSizes\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byChiefFactors,
-         " pairs distinguished by chiefFactorSizes\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byDerivedSeries,
-         " pairs distinguished by derivedSeriesSizes\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byNilpotency,
-         " pairs distinguished by nilpotencyClass\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byNormalSubs,
-         " pairs distinguished by numNormalSubs\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byFrattini,
-         " pairs distinguished by frattiniSize\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byAutGroup,
-         " pairs distinguished by autGroupOrder\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.bySubgroupProfile,
-         " pairs distinguished by subgroupOrderProfile\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byPowerMap,
-         " pairs distinguished by powerMapStructure\n");
-AppendTo(SUMMARY_FILE, "    * ", _e2Stats.byIsomorphismGroups,
-         " pairs distinguished by IsomorphismGroups\n");
-AppendTo(SUMMARY_FILE, "  No overlap between IdGroup types and large group types",
-         " (disjoint order ranges)\n\n");
-
-AppendTo(SUMMARY_FILE, "=== Timing ===\n");
-AppendTo(SUMMARY_FILE, "  Phase A (load): ",
-         Int((phaseBStart - phaseAStart)/1000), "s\n");
-AppendTo(SUMMARY_FILE, "  Phase B (invariants): ",
-         Int((phaseCStart - phaseBStart)/1000), "s\n");
-AppendTo(SUMMARY_FILE, "  Phase C (non-conjugacy): ",
-         Int((phaseDStart - phaseCStart)/1000), "s\n");
-AppendTo(SUMMARY_FILE, "  Phase D (proofs+mapping): ",
-         Int((phaseEStart - phaseDStart)/1000), "s\n");
-AppendTo(SUMMARY_FILE, "  Phase E (non-isomorphism): ",
-         Int((phaseFStart - phaseEStart)/1000), "s\n");
-AppendTo(SUMMARY_FILE, "  Phase F (output): ",
-         Int((Runtime() - phaseFStart)/1000), "s\n");
-AppendTo(SUMMARY_FILE, "  Total: ", Int(_totalTime/1000), "s\n");
-
-Print("Phase F complete\n");
-Print("Phase F time: ", Int((Runtime() - phaseFStart)/1000), "s\n\n");
+Print("  Written to ", _mapFile, "\n");
+Print("  Type size distribution: min=", _typeSizes[1],
+      " median=", _typeSizes[Int(EXPECTED_TYPES/2)],
+      " max=", _typeSizes[EXPECTED_TYPES], "\n");
+Print("  Mapping time: ", Int((Runtime() - _mapStart) / 1000), "s\n\n");
 
 ##############################################################################
-## FINAL SUMMARY
+## Summary
 ##############################################################################
+
+_totalTime := Runtime() - _startTime;
 
 Print("==================================================\n");
 Print("  VERIFICATION COMPLETE\n");
 Print("==================================================\n\n");
-Print("  A174511(14) = ", _nIdTypes + _nLargeTypes, "  (expected: ",
-      EXPECTED_TOTAL, ")\n\n");
-
-if _nIdTypes + _nLargeTypes = EXPECTED_TOTAL then
-    Print("  *** VERIFIED: A174511(14) = ", EXPECTED_TOTAL, " ***\n\n");
-else
-    Print("  *** MISMATCH: got ", _nIdTypes + _nLargeTypes,
-          " expected ", EXPECTED_TOTAL, " ***\n\n");
+Print("  A174511(14) = ", EXPECTED_TYPES, "\n");
+if RUN_PHASE_D then
+    Print("  A000638(14) = ", EXPECTED_CLASSES, "\n");
 fi;
-
-Print("  IdGroup types: ", _nIdTypes, "\n");
-Print("  Large group types: ", _nLargeTypes, "\n");
-Print("  Total time: ", Int(_totalTime/1000), "s\n\n");
-Print("  Output files:\n");
-Print("    ", SUMMARY_FILE, "\n");
-Print("    ", MAPPING_FILE, "\n");
-Print("    ", FINGERPRINT_FILE, "\n");
-Print("    ", PHASE_D_FILE, "\n");
-Print("    ", PHASE_E_FILE, "\n");
+Print("\n");
+Print("  Phase A: ", EXPECTED_TYPES, "/", EXPECTED_TYPES,
+      " fingerprint invariants verified\n");
+Print("  Phase B: ", EXPECTED_PROOFS, "/", EXPECTED_PROOFS,
+      " proofs verified, ", EXPECTED_IDG_TYPES,
+      " IdGroup types, union-find = ", EXPECTED_TYPES, " types\n");
+Print("  Phase C: ", EXPECTED_LARGE_TYPES,
+      " large types pairwise distinguished, ",
+      EXPECTED_IDG_TYPES, " IdGroup types disjoint\n");
+if RUN_PHASE_D then
+    Print("  Phase D: ", EXPECTED_CLASSES,
+          " classes pairwise non-conjugate (",
+          _nConjTests, " IsConjugate tests, ",
+          _nOrbitTypeSplit, " L1 orbit-type elim, ",
+          _nHistogramSplit, " L2 histogram elim)\n");
+fi;
+Print("\n  Total time: ", Int(_totalTime / 1000), "s\n");
 
 QUIT;

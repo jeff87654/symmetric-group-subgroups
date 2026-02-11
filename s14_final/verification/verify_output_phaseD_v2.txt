@@ -1,0 +1,540 @@
+# Started at 2026-02-10 22:08:07.291019
+
+
+==================================================
+  A174511(14) Verification
+==================================================
+
+Loading s14_subgroups.g...
+  Loaded 75154 generator lists
+Loading proof_all_remapped.g...
+  Loaded 7523 proofs
+Loading type_fingerprints.g...
+  Loaded 7766 type fingerprints
+Load time: 1s
+
+=== PHASE A: Verify fingerprint invariants ===
+
+  Type 1/7766 (0 idg, 0 large) ETA=0s
+  Type 200/7766 (115 idg, 84 large) ETA=406s
+  Type 400/7766 (206 idg, 193 large) ETA=611s
+  Type 600/7766 (279 idg, 320 large) ETA=561s
+  Type 800/7766 (348 idg, 451 large) ETA=498s
+  Type 1000/7766 (348 idg, 651 large) ETA=595s
+  Type 1200/7766 (491 idg, 708 large) ETA=544s
+  Type 1400/7766 (676 idg, 723 large) ETA=463s
+  Type 1600/7766 (827 idg, 772 large) ETA=425s
+  Type 1800/7766 (992 idg, 807 large) ETA=389s
+  Type 2000/7766 (1128 idg, 871 large) ETA=366s
+  Type 2200/7766 (1259 idg, 940 large) ETA=347s
+  Type 2400/7766 (1381 idg, 1018 large) ETA=330s
+  Type 2600/7766 (1511 idg, 1088 large) ETA=311s
+  Type 2800/7766 (1620 idg, 1179 large) ETA=296s
+  Type 3000/7766 (1721 idg, 1278 large) ETA=290s
+  Type 3200/7766 (1850 idg, 1349 large) ETA=313s
+  Type 3400/7766 (2005 idg, 1394 large) ETA=354s
+  Type 3600/7766 (2141 idg, 1458 large) ETA=392s
+  Type 3800/7766 (2254 idg, 1545 large) ETA=367s
+  Type 4000/7766 (2378 idg, 1621 large) ETA=340s
+  Type 4200/7766 (2487 idg, 1712 large) ETA=322s
+  Type 4400/7766 (2582 idg, 1817 large) ETA=304s
+  Type 4600/7766 (2743 idg, 1856 large) ETA=278s
+  Type 4800/7766 (2908 idg, 1891 large) ETA=252s
+  Type 5000/7766 (3028 idg, 1971 large) ETA=231s
+  Type 5200/7766 (3152 idg, 2047 large) ETA=212s
+  Type 5400/7766 (3259 idg, 2140 large) ETA=195s
+  Type 5600/7766 (3355 idg, 2244 large) ETA=177s
+  Type 5800/7766 (3504 idg, 2295 large) ETA=169s
+  Type 6000/7766 (3617 idg, 2382 large) ETA=153s
+  Type 6200/7766 (3746 idg, 2453 large) ETA=133s
+  Type 6400/7766 (3837 idg, 2562 large) ETA=115s
+  Type 6600/7766 (3972 idg, 2627 large) ETA=97s
+  Type 6800/7766 (4100 idg, 2699 large) ETA=111s
+  Type 7000/7766 (4211 idg, 2788 large) ETA=87s
+  Type 7200/7766 (4296 idg, 2903 large) ETA=64s
+  Type 7400/7766 (4433 idg, 2966 large) ETA=42s
+  Type 7600/7766 (4536 idg, 3063 large) ETA=19s
+Phase A complete: all 7766 fingerprints verified
+  4602 IdGroup types, 3164 large types
+Phase A time: 901s
+
+=== PHASE B: Verify proofs + build type mapping ===
+
+B1: Computing IdGroup + orbit structure for all groups...
+  B1: 5000/75154 (4287 idg, 713 large)
+  B1: 10000/75154 (8779 idg, 1221 large)
+  B1: 15000/75154 (12626 idg, 2374 large)
+  B1: 20000/75154 (17197 idg, 2803 large)
+  B1: 25000/75154 (21139 idg, 3861 large)
+  B1: 30000/75154 (25764 idg, 4236 large)
+  B1: 35000/75154 (30267 idg, 4733 large)
+  B1: 40000/75154 (34256 idg, 5744 large)
+  B1: 45000/75154 (38925 idg, 6075 large)
+  B1: 50000/75154 (42851 idg, 7149 large)
+  B1: 55000/75154 (47488 idg, 7512 large)
+  B1: 60000/75154 (51858 idg, 8142 large)
+  B1: 65000/75154 (55998 idg, 9002 large)
+  B1: 70000/75154 (60592 idg, 9408 large)
+  B1: 75000/75154 (64370 idg, 10630 large)
+  IdGroup-compatible: 64467 groups -> 4602 unique types
+  Large groups: 10687
+
+B2: Verifying 7523 isomorphism proofs...
+Syntax warning: Unbound global variable in /cygdrive/c/Users/jeffr/Downloads/S\
+ymmetric Groups/s14_final/verification/verify_a174511_14.g:597
+    if not ForAll(_proofImgs, h -> h in _H) then
+                                        ^^
+  Proof 1/7523 pass=0 fail=0 ETA=0s
+  Proof 2/7523 pass=1 fail=0 ETA=0s
+  Proof 3/7523 pass=2 fail=0 ETA=0s
+  Proof 4/7523 pass=3 fail=0 ETA=0s
+  Proof 5/7523 pass=4 fail=0 ETA=0s
+  Proof 200/7523 pass=199 fail=0 ETA=25s
+  Proof 400/7523 pass=399 fail=0 ETA=24s
+  Proof 600/7523 pass=599 fail=0 ETA=24s
+  Proof 800/7523 pass=799 fail=0 ETA=25s
+  Proof 1000/7523 pass=999 fail=0 ETA=25s
+  Proof 1200/7523 pass=1199 fail=0 ETA=24s
+  Proof 1400/7523 pass=1399 fail=0 ETA=22s
+  Proof 1600/7523 pass=1599 fail=0 ETA=22s
+  Proof 1800/7523 pass=1799 fail=0 ETA=21s
+  Proof 2000/7523 pass=1999 fail=0 ETA=21s
+  Proof 2200/7523 pass=2199 fail=0 ETA=20s
+  Proof 2400/7523 pass=2399 fail=0 ETA=20s
+  Proof 2600/7523 pass=2599 fail=0 ETA=19s
+  Proof 2800/7523 pass=2799 fail=0 ETA=18s
+  Proof 3000/7523 pass=2999 fail=0 ETA=17s
+  Proof 3200/7523 pass=3199 fail=0 ETA=16s
+  Proof 3400/7523 pass=3399 fail=0 ETA=16s
+  Proof 3600/7523 pass=3599 fail=0 ETA=15s
+  Proof 3800/7523 pass=3799 fail=0 ETA=14s
+  Proof 4000/7523 pass=3999 fail=0 ETA=14s
+  Proof 4200/7523 pass=4199 fail=0 ETA=13s
+  Proof 4400/7523 pass=4399 fail=0 ETA=12s
+  Proof 4600/7523 pass=4599 fail=0 ETA=11s
+  Proof 4800/7523 pass=4799 fail=0 ETA=10s
+  Proof 5000/7523 pass=4999 fail=0 ETA=10s
+  Proof 5200/7523 pass=5199 fail=0 ETA=9s
+  Proof 5400/7523 pass=5399 fail=0 ETA=8s
+  Proof 5600/7523 pass=5599 fail=0 ETA=7s
+  Proof 5800/7523 pass=5799 fail=0 ETA=6s
+  Proof 6000/7523 pass=5999 fail=0 ETA=5s
+  Proof 6200/7523 pass=6199 fail=0 ETA=5s
+  Proof 6400/7523 pass=6399 fail=0 ETA=4s
+  Proof 6600/7523 pass=6599 fail=0 ETA=3s
+  Proof 6800/7523 pass=6799 fail=0 ETA=2s
+  Proof 7000/7523 pass=6999 fail=0 ETA=2s
+  Proof 7200/7523 pass=7199 fail=0 ETA=1s
+  Proof 7400/7523 pass=7399 fail=0 ETA=0s
+  All 7523/7523 proofs verified as bijective homomorphisms
+
+B3: Counting distinct types...
+  Total types: 7766
+  UPPER BOUND VERIFIED: at most 7766 types
+Phase B time: 423s
+
+=== PHASE C: Verify non-isomorphism ===
+
+  IdGroup types: 4602 (distinct by definition)
+  Large types: 3164 (need invariant comparison)
+  IdGroup/large disjointness: VERIFIED
+
+  Singleton order buckets: 62
+  Multi-type order buckets: 146 (95306 pairs checked)
+  Distinguishing invariant breakdown:
+    derivedSize: 74679
+    nrCC: 18554
+    derivedLength: 297
+    abelianInvariants: 562
+    exponent: 292
+    centerSize: 86
+    nrInvolutions: 713
+    nrElementsOfOrder4: 60
+    nrElementsOfOrder6: 2
+    classSizes: 4
+    derivedSeriesSizes: 4
+    nilpotencyClass: 2
+    numNormalSubs: 2
+    autGroupOrder: 36
+    subgroupOrderProfile: 13
+
+  LOWER BOUND VERIFIED: at least 7766 types
+Phase C time: 0s
+
+=== PHASE D: Verify conjugacy class completeness ===
+
+  Type 2/7766 (124 classes, 0s, 2 conj tests cumulative)
+  Type 12/7766 (70 classes, 0s, 4 conj tests cumulative)
+  Type 26/7766 (54 classes, 0s, 19 conj tests cumulative)
+  Type 56/7766 (116 classes, 2s, 23 conj tests cumulative)
+  Type 64/7766 (76 classes, 7s, 23 conj tests cumulative)
+  Type 117/7766 (57 classes, 0s, 31 conj tests cumulative)
+  Type 146/7766 (178 classes, 0s, 76 conj tests cumulative)
+  Type 148/7766 (70 classes, 0s, 76 conj tests cumulative)
+  Type 180/7766 (54 classes, 0s, 79 conj tests cumulative)
+  Type 233/7766 (74 classes, 0s, 83 conj tests cumulative)
+  Type 294/7766 (60 classes, 0s, 88 conj tests cumulative)
+  Type 298/7766 (168 classes, 0s, 107 conj tests cumulative)
+  Type 308/7766 (58 classes, 0s, 107 conj tests cumulative)
+  Type 310/7766 (84 classes, 0s, 107 conj tests cumulative)
+  Type 318/7766 (123 classes, 0s, 111 conj tests cumulative)
+  Type 338/7766 (96 classes, 3s, 130 conj tests cumulative)
+  Type 347/7766 (109 classes, 10s, 134 conj tests cumulative)
+  Type 363/7766 (108 classes, 0s, 136 conj tests cumulative)
+  Type 368/7766 (58 classes, 0s, 137 conj tests cumulative)
+  Type 383/7766 (59 classes, 1s, 137 conj tests cumulative)
+  Type 386/7766 (84 classes, 0s, 137 conj tests cumulative)
+  Type 387/7766 (164 classes, 0s, 150 conj tests cumulative)
+  Type 407/7766 (50 classes, 2s, 152 conj tests cumulative)
+  Type 454/7766 (62 classes, 0s, 165 conj tests cumulative)
+  Type 472/7766 (58 classes, 0s, 189 conj tests cumulative)
+  Type 500/7766 (77 classes, 4s, 195 conj tests cumulative)
+  Type 518/7766 (232 classes, 0s, 236 conj tests cumulative)
+  Type 626/7766 (109 classes, 0s, 247 conj tests cumulative)
+  Type 629/7766 (56 classes, 0s, 249 conj tests cumulative)
+  Type 641/7766 (116 classes, 0s, 260 conj tests cumulative)
+  Type 662/7766 (56 classes, 0s, 262 conj tests cumulative)
+  Type 817/7766 (128 classes, 0s, 293 conj tests cumulative)
+  Type 847/7766 (70 classes, 0s, 293 conj tests cumulative)
+  Type 853/7766 (72 classes, 0s, 301 conj tests cumulative)
+  Type 987/7766 (56 classes, 0s, 308 conj tests cumulative)
+  Type 1000/7766 (312 conj tests, 193s elapsed)
+  Type 1086/7766 (50 classes, 0s, 315 conj tests cumulative)
+  Type 1119/7766 (117 classes, 6s, 315 conj tests cumulative)
+  Type 1389/7766 (64 classes, 0s, 328 conj tests cumulative)
+  Type 1475/7766 (67 classes, 4s, 328 conj tests cumulative)
+  Type 1500/7766 (328 conj tests, 235s elapsed)
+  Type 1707/7766 (125 classes, 0s, 342 conj tests cumulative)
+  Type 1711/7766 (64 classes, 0s, 346 conj tests cumulative)
+  Type 1715/7766 (166 classes, 0s, 380 conj tests cumulative)
+  Type 1716/7766 (592 classes, 2s, 553 conj tests cumulative)
+  Type 1722/7766 (77 classes, 0s, 553 conj tests cumulative)
+  Type 1730/7766 (60 classes, 0s, 558 conj tests cumulative)
+  Type 1731/7766 (72 classes, 0s, 563 conj tests cumulative)
+  Type 1751/7766 (132 classes, 0s, 583 conj tests cumulative)
+  Type 1753/7766 (118 classes, 0s, 586 conj tests cumulative)
+  Type 1754/7766 (60 classes, 0s, 586 conj tests cumulative)
+  Type 1769/7766 (145 classes, 0s, 605 conj tests cumulative)
+  Type 1770/7766 (279 classes, 0s, 626 conj tests cumulative)
+  Type 1773/7766 (80 classes, 0s, 635 conj tests cumulative)
+  Type 1781/7766 (116 classes, 0s, 644 conj tests cumulative)
+  Type 1782/7766 (56 classes, 0s, 646 conj tests cumulative)
+  Type 1783/7766 (116 classes, 0s, 653 conj tests cumulative)
+  Type 1786/7766 (64 classes, 0s, 659 conj tests cumulative)
+  Type 1787/7766 (64 classes, 0s, 663 conj tests cumulative)
+  Type 1790/7766 (62 classes, 0s, 664 conj tests cumulative)
+  Type 1791/7766 (62 classes, 0s, 672 conj tests cumulative)
+  Type 1796/7766 (121 classes, 4s, 672 conj tests cumulative)
+  Type 1809/7766 (62 classes, 0s, 684 conj tests cumulative)
+  Type 1828/7766 (132 classes, 0s, 694 conj tests cumulative)
+  Type 1836/7766 (186 classes, 0s, 718 conj tests cumulative)
+  Type 1846/7766 (278 classes, 0s, 730 conj tests cumulative)
+  Type 1848/7766 (82 classes, 0s, 768 conj tests cumulative)
+  Type 1861/7766 (77 classes, 3s, 769 conj tests cumulative)
+  Type 1865/7766 (1318 classes, 3s, 1105 conj tests cumulative)
+  Type 1871/7766 (53 classes, 2s, 1109 conj tests cumulative)
+  Type 1885/7766 (413 classes, 0s, 1115 conj tests cumulative)
+  Type 1900/7766 (72 classes, 0s, 1133 conj tests cumulative)
+  Type 1901/7766 (371 classes, 1s, 1168 conj tests cumulative)
+  Type 1903/7766 (190 classes, 0s, 1177 conj tests cumulative)
+  Type 1912/7766 (59 classes, 0s, 1179 conj tests cumulative)
+  Type 1952/7766 (68 classes, 0s, 1192 conj tests cumulative)
+  Type 1982/7766 (106 classes, 0s, 1204 conj tests cumulative)
+  Type 1983/7766 (54 classes, 0s, 1204 conj tests cumulative)
+  Type 2000/7766 (1207 conj tests, 318s elapsed)
+  Type 2006/7766 (992 classes, 3s, 1406 conj tests cumulative)
+  Type 2092/7766 (63 classes, 0s, 1452 conj tests cumulative)
+  Type 2133/7766 (72 classes, 0s, 1473 conj tests cumulative)
+  Type 2165/7766 (69 classes, 1s, 1483 conj tests cumulative)
+  Type 2315/7766 (52 classes, 3s, 1493 conj tests cumulative)
+  Type 2335/7766 (51 classes, 7s, 1495 conj tests cumulative)
+  Type 2374/7766 (51 classes, 10s, 1499 conj tests cumulative)
+  Type 2984/7766 (407 classes, 1s, 1678 conj tests cumulative)
+  Type 3000/7766 (1678 conj tests, 460s elapsed)
+  Type 3084/7766 (58 classes, 0s, 1678 conj tests cumulative)
+  Type 3196/7766 (716 classes, 2s, 1791 conj tests cumulative)
+  Type 3198/7766 (181 classes, 0s, 1805 conj tests cumulative)
+  Type 3201/7766 (558 classes, 1s, 1882 conj tests cumulative)
+  Type 3203/7766 (320 classes, 0s, 1948 conj tests cumulative)
+  Type 3211/7766 (85 classes, 0s, 1958 conj tests cumulative)
+  Type 3213/7766 (72 classes, 1s, 1959 conj tests cumulative)
+  Type 3219/7766 (152 classes, 0s, 1972 conj tests cumulative)
+  Type 3225/7766 (534 classes, 1s, 2000 conj tests cumulative)
+  Type 3244/7766 (96 classes, 0s, 2057 conj tests cumulative)
+  Type 3256/7766 (64 classes, 0s, 2064 conj tests cumulative)
+  Type 3259/7766 (96 classes, 0s, 2083 conj tests cumulative)
+  Type 3268/7766 (664 classes, 1s, 2151 conj tests cumulative)
+  Type 3292/7766 (84 classes, 0s, 2159 conj tests cumulative)
+  Type 3302/7766 (55 classes, 1s, 2166 conj tests cumulative)
+  Type 3318/7766 (119 classes, 2s, 2168 conj tests cumulative)
+  Type 3320/7766 (56 classes, 1s, 2168 conj tests cumulative)
+  Type 3329/7766 (264 classes, 0s, 2196 conj tests cumulative)
+  Type 3331/7766 (100 classes, 0s, 2204 conj tests cumulative)
+  Type 3333/7766 (57 classes, 0s, 2208 conj tests cumulative)
+  Type 3373/7766 (51 classes, 1s, 2237 conj tests cumulative)
+  Type 3377/7766 (240 classes, 0s, 2276 conj tests cumulative)
+  Type 3397/7766 (534 classes, 1s, 2336 conj tests cumulative)
+  Type 3450/7766 (939 classes, 2s, 2646 conj tests cumulative)
+  Type 3451/7766 (52 classes, 1s, 2646 conj tests cumulative)
+  Type 3500/7766 (2653 conj tests, 523s elapsed)
+  Type 3558/7766 (340 classes, 0s, 2707 conj tests cumulative)
+  Type 3559/7766 (175 classes, 0s, 2726 conj tests cumulative)
+  Type 3601/7766 (68 classes, 0s, 2728 conj tests cumulative)
+  Type 3647/7766 (96 classes, 0s, 2741 conj tests cumulative)
+  Type 3714/7766 (64 classes, 0s, 2750 conj tests cumulative)
+  Type 3777/7766 (52 classes, 0s, 2758 conj tests cumulative)
+  Type 3981/7766 (230 classes, 0s, 2783 conj tests cumulative)
+  Type 4000/7766 (2783 conj tests, 564s elapsed)
+  Type 4314/7766 (113 classes, 0s, 2792 conj tests cumulative)
+  Type 4469/7766 (724 classes, 1s, 2839 conj tests cumulative)
+  Type 4480/7766 (563 classes, 0s, 2855 conj tests cumulative)
+  Type 4487/7766 (56 classes, 0s, 2858 conj tests cumulative)
+  Type 4489/7766 (63 classes, 0s, 2858 conj tests cumulative)
+  Type 4500/7766 (176 classes, 0s, 2860 conj tests cumulative)
+  Type 4504/7766 (64 classes, 2s, 2862 conj tests cumulative)
+  Type 4507/7766 (64 classes, 2s, 2863 conj tests cumulative)
+  Type 4542/7766 (198 classes, 5s, 2870 conj tests cumulative)
+  Type 4544/7766 (72 classes, 3s, 2872 conj tests cumulative)
+  Type 4545/7766 (64 classes, 2s, 2873 conj tests cumulative)
+  Type 4552/7766 (50 classes, 0s, 2876 conj tests cumulative)
+  Type 4554/7766 (60 classes, 0s, 2889 conj tests cumulative)
+  Type 4557/7766 (64 classes, 0s, 2909 conj tests cumulative)
+  Type 4584/7766 (56 classes, 0s, 2918 conj tests cumulative)
+  Type 4588/7766 (64 classes, 0s, 2923 conj tests cumulative)
+  Type 4591/7766 (116 classes, 0s, 2934 conj tests cumulative)
+  Type 4596/7766 (116 classes, 0s, 2946 conj tests cumulative)
+  Type 4601/7766 (64 classes, 0s, 2952 conj tests cumulative)
+  Type 4663/7766 (216 classes, 0s, 3061 conj tests cumulative)
+  Type 4665/7766 (53 classes, 0s, 3067 conj tests cumulative)
+  Type 4687/7766 (80 classes, 0s, 3075 conj tests cumulative)
+  Type 4690/7766 (636 classes, 0s, 3170 conj tests cumulative)
+  Type 4731/7766 (108 classes, 0s, 3202 conj tests cumulative)
+  Type 4775/7766 (64 classes, 0s, 3208 conj tests cumulative)
+  Type 4811/7766 (272 classes, 0s, 3228 conj tests cumulative)
+  Type 5041/7766 (257 classes, 0s, 3312 conj tests cumulative)
+  Type 5072/7766 (96 classes, 0s, 3329 conj tests cumulative)
+  Type 5076/7766 (184 classes, 0s, 3371 conj tests cumulative)
+  Type 5104/7766 (116 classes, 0s, 3373 conj tests cumulative)
+  Type 5165/7766 (212 classes, 0s, 3380 conj tests cumulative)
+  Type 5265/7766 (65 classes, 0s, 3380 conj tests cumulative)
+  Type 5519/7766 (64 classes, 1s, 3383 conj tests cumulative)
+  Type 5552/7766 (159 classes, 0s, 3410 conj tests cumulative)
+  Type 5560/7766 (119 classes, 0s, 3414 conj tests cumulative)
+  Type 5564/7766 (56 classes, 0s, 3417 conj tests cumulative)
+  Type 5574/7766 (169 classes, 0s, 3427 conj tests cumulative)
+  Type 5598/7766 (148 classes, 0s, 3456 conj tests cumulative)
+  Type 5604/7766 (67 classes, 0s, 3457 conj tests cumulative)
+  Type 5606/7766 (82 classes, 0s, 3468 conj tests cumulative)
+  Type 5647/7766 (362 classes, 0s, 3485 conj tests cumulative)
+  Type 5660/7766 (196 classes, 0s, 3578 conj tests cumulative)
+  Type 5661/7766 (104 classes, 0s, 3606 conj tests cumulative)
+  Type 5665/7766 (104 classes, 0s, 3608 conj tests cumulative)
+  Type 5667/7766 (152 classes, 0s, 3609 conj tests cumulative)
+  Type 5703/7766 (164 classes, 0s, 3629 conj tests cumulative)
+  Type 5725/7766 (68 classes, 0s, 3635 conj tests cumulative)
+  Type 5738/7766 (108 classes, 0s, 3681 conj tests cumulative)
+  Type 5739/7766 (58 classes, 0s, 3710 conj tests cumulative)
+  Type 5756/7766 (222 classes, 1s, 3816 conj tests cumulative)
+  Type 5766/7766 (108 classes, 0s, 3844 conj tests cumulative)
+  Type 5785/7766 (149 classes, 0s, 3848 conj tests cumulative)
+  Type 5825/7766 (80 classes, 0s, 3851 conj tests cumulative)
+  Type 5827/7766 (162 classes, 0s, 3863 conj tests cumulative)
+  Type 5866/7766 (63 classes, 0s, 3865 conj tests cumulative)
+  Type 5911/7766 (50 classes, 1s, 3865 conj tests cumulative)
+  Type 5915/7766 (50 classes, 1s, 3865 conj tests cumulative)
+  Type 5923/7766 (211 classes, 7s, 3865 conj tests cumulative)
+  Type 6000/7766 (3865 conj tests, 742s elapsed)
+  Type 6044/7766 (286 classes, 0s, 3882 conj tests cumulative)
+  Type 6193/7766 (52 classes, 0s, 3887 conj tests cumulative)
+  Type 6433/7766 (184 classes, 0s, 3899 conj tests cumulative)
+  Type 6452/7766 (141 classes, 0s, 3901 conj tests cumulative)
+  Type 6454/7766 (82 classes, 0s, 3901 conj tests cumulative)
+  Type 6457/7766 (64 classes, 0s, 3902 conj tests cumulative)
+  Type 6458/7766 (96 classes, 0s, 3904 conj tests cumulative)
+  Type 6468/7766 (52 classes, 1s, 3905 conj tests cumulative)
+  Type 6474/7766 (431 classes, 0s, 3925 conj tests cumulative)
+  Type 6477/7766 (64 classes, 0s, 3926 conj tests cumulative)
+  Type 6478/7766 (72 classes, 0s, 3928 conj tests cumulative)
+  Type 6488/7766 (283 classes, 0s, 3934 conj tests cumulative)
+  Type 6490/7766 (73 classes, 3s, 3934 conj tests cumulative)
+  Type 6494/7766 (119 classes, 0s, 3938 conj tests cumulative)
+  Type 6495/7766 (232 classes, 0s, 3964 conj tests cumulative)
+  Type 6498/7766 (293 classes, 0s, 3972 conj tests cumulative)
+  Type 6500/7766 (190 classes, 0s, 3981 conj tests cumulative)
+  Type 6504/7766 (78 classes, 0s, 3989 conj tests cumulative)
+  Type 6507/7766 (149 classes, 0s, 3997 conj tests cumulative)
+  Type 6545/7766 (328 classes, 0s, 4018 conj tests cumulative)
+  Type 6546/7766 (262 classes, 0s, 4026 conj tests cumulative)
+  Type 6554/7766 (61 classes, 0s, 4026 conj tests cumulative)
+  Type 6561/7766 (120 classes, 0s, 4029 conj tests cumulative)
+  Type 6587/7766 (182 classes, 0s, 4041 conj tests cumulative)
+  Type 6597/7766 (58 classes, 0s, 4041 conj tests cumulative)
+  Type 6614/7766 (100 classes, 0s, 4046 conj tests cumulative)
+  Type 6635/7766 (244 classes, 0s, 4095 conj tests cumulative)
+  Type 6636/7766 (124 classes, 0s, 4106 conj tests cumulative)
+  Type 6638/7766 (204 classes, 0s, 4120 conj tests cumulative)
+  Type 6653/7766 (164 classes, 0s, 4126 conj tests cumulative)
+  Type 6698/7766 (73 classes, 0s, 4126 conj tests cumulative)
+  Type 6746/7766 (142 classes, 0s, 4148 conj tests cumulative)
+  Type 6751/7766 (121 classes, 4s, 4148 conj tests cumulative)
+  Type 6780/7766 (98 classes, 0s, 4151 conj tests cumulative)
+  Type 6806/7766 (100 classes, 0s, 4156 conj tests cumulative)
+  Type 6886/7766 (62 classes, 0s, 4166 conj tests cumulative)
+  Type 6945/7766 (50 classes, 3s, 4166 conj tests cumulative)
+  Type 6964/7766 (52 classes, 0s, 4168 conj tests cumulative)
+  Type 7000/7766 (4168 conj tests, 813s elapsed)
+  Type 7219/7766 (65 classes, 0s, 4169 conj tests cumulative)
+  Type 7221/7766 (351 classes, 0s, 4171 conj tests cumulative)
+  Type 7222/7766 (66 classes, 0s, 4172 conj tests cumulative)
+  Type 7232/7766 (81 classes, 0s, 4174 conj tests cumulative)
+  Type 7236/7766 (54 classes, 1s, 4174 conj tests cumulative)
+  Type 7240/7766 (107 classes, 0s, 4176 conj tests cumulative)
+  Type 7243/7766 (88 classes, 0s, 4178 conj tests cumulative)
+  Type 7246/7766 (64 classes, 0s, 4185 conj tests cumulative)
+  Type 7253/7766 (64 classes, 0s, 4185 conj tests cumulative)
+  Type 7262/7766 (175 classes, 0s, 4194 conj tests cumulative)
+  Type 7264/7766 (56 classes, 0s, 4195 conj tests cumulative)
+  Type 7266/7766 (166 classes, 0s, 4197 conj tests cumulative)
+  Type 7273/7766 (59 classes, 0s, 4197 conj tests cumulative)
+  Type 7277/7766 (56 classes, 0s, 4199 conj tests cumulative)
+  Type 7284/7766 (121 classes, 0s, 4199 conj tests cumulative)
+  Type 7287/7766 (427 classes, 0s, 4245 conj tests cumulative)
+  Type 7289/7766 (61 classes, 0s, 4245 conj tests cumulative)
+  Type 7294/7766 (84 classes, 0s, 4256 conj tests cumulative)
+  Type 7298/7766 (96 classes, 0s, 4270 conj tests cumulative)
+  Type 7304/7766 (110 classes, 0s, 4278 conj tests cumulative)
+  Type 7308/7766 (57 classes, 0s, 4280 conj tests cumulative)
+  Type 7313/7766 (63 classes, 0s, 4280 conj tests cumulative)
+  Type 7316/7766 (72 classes, 0s, 4308 conj tests cumulative)
+  Type 7321/7766 (56 classes, 5s, 4311 conj tests cumulative)
+  Type 7324/7766 (60 classes, 0s, 4311 conj tests cumulative)
+  Type 7332/7766 (86 classes, 0s, 4313 conj tests cumulative)
+  Type 7339/7766 (59 classes, 0s, 4327 conj tests cumulative)
+  Type 7357/7766 (69 classes, 0s, 4337 conj tests cumulative)
+  Type 7359/7766 (78 classes, 0s, 4346 conj tests cumulative)
+  Type 7378/7766 (664 classes, 2s, 4645 conj tests cumulative)
+  Type 7380/7766 (156 classes, 0s, 4649 conj tests cumulative)
+  Type 7382/7766 (105 classes, 0s, 4652 conj tests cumulative)
+  Type 7386/7766 (95 classes, 0s, 4652 conj tests cumulative)
+  Type 7388/7766 (77 classes, 0s, 4652 conj tests cumulative)
+  Type 7391/7766 (150 classes, 2s, 4652 conj tests cumulative)
+  Type 7409/7766 (78 classes, 0s, 4653 conj tests cumulative)
+  Type 7416/7766 (56 classes, 0s, 4657 conj tests cumulative)
+  Type 7425/7766 (71 classes, 0s, 4661 conj tests cumulative)
+  Type 7435/7766 (87 classes, 8s, 4661 conj tests cumulative)
+  Type 7437/7766 (53 classes, 0s, 4661 conj tests cumulative)
+  Type 7445/7766 (96 classes, 0s, 4666 conj tests cumulative)
+  Type 7451/7766 (59 classes, 0s, 4668 conj tests cumulative)
+  Type 7452/7766 (213 classes, 0s, 4676 conj tests cumulative)
+  Type 7485/7766 (78 classes, 2s, 4685 conj tests cumulative)
+  Type 7499/7766 (84 classes, 0s, 4703 conj tests cumulative)
+  Type 7500/7766 (4703 conj tests, 873s elapsed)
+  Type 7507/7766 (128 classes, 0s, 4704 conj tests cumulative)
+  Type 7509/7766 (59 classes, 0s, 4707 conj tests cumulative)
+  Type 7510/7766 (637 classes, 1s, 4732 conj tests cumulative)
+  Type 7515/7766 (123 classes, 0s, 4738 conj tests cumulative)
+  Type 7518/7766 (116 classes, 0s, 4738 conj tests cumulative)
+  Type 7521/7766 (52 classes, 1s, 4739 conj tests cumulative)
+  Type 7543/7766 (108 classes, 0s, 4760 conj tests cumulative)
+  Type 7548/7766 (63 classes, 0s, 4760 conj tests cumulative)
+  Type 7560/7766 (56 classes, 0s, 4780 conj tests cumulative)
+  Type 7561/7766 (52 classes, 0s, 4785 conj tests cumulative)
+  Type 7567/7766 (163 classes, 5s, 4785 conj tests cumulative)
+  Type 7605/7766 (53 classes, 6s, 4788 conj tests cumulative)
+  Type 7610/7766 (83 classes, 0s, 4788 conj tests cumulative)
+  Type 7618/7766 (56 classes, 0s, 4788 conj tests cumulative)
+  Type 7627/7766 (52 classes, 1s, 4789 conj tests cumulative)
+  Type 7637/7766 (124 classes, 0s, 4804 conj tests cumulative)
+  Type 7647/7766 (51 classes, 0s, 4804 conj tests cumulative)
+  Type 7669/7766 (64 classes, 1s, 4812 conj tests cumulative)
+  Type 7693/7766 (78 classes, 0s, 4818 conj tests cumulative)
+  Type 7698/7766 (63 classes, 0s, 4820 conj tests cumulative)
+  Type 7705/7766 (102 classes, 0s, 4822 conj tests cumulative)
+  Type 7707/7766 (51 classes, 0s, 4822 conj tests cumulative)
+
+  Phase D Statistics:
+  Singleton types (1 class): 2582
+  Multi-class types: 5184
+  Total pairs across all type buckets: 6623737
+  L1 — Pairs eliminated by orbit types: 5541698
+  L2 — Pairs eliminated by histogram: 1077206
+  L3 — Pairwise IsConjugate tests: 4833
+  Largest L1 sub-bucket (orbit type): 374
+  Largest L2 sub-bucket (histogram): 6
+  Histograms computed: 59187
+  Conjugate pairs found: 0
+
+  Histogram cost/benefit analysis (8605 L1 sub-buckets):
+Syntax warning: Unbound global variable in /cygdrive/c/Users/jeffr/Downloads/S\
+ymmetric Groups/s14_final/verification/verify_a174511_14.g:1009
+            e -> e[1] >= _lo and e[1] <= _hi);
+                         ^^^
+Syntax warning: Unbound global variable in /cygdrive/c/Users/jeffr/Downloads/S\
+ymmetric Groups/s14_final/verification/verify_a174511_14.g:1009
+            e -> e[1] >= _lo and e[1] <= _hi);
+                                         ^^^
+    Order 1-100: 2361 L1 buckets, 23439 histograms in 27614ms, 
+669916 pairs saved, 3476 remaining (2361 beneficial, 0 wasted)
+    Order 101-1K: 4485 L1 buckets, 29169 histograms in 262252ms, 
+387673 pairs saved, 1274 remaining (4449 beneficial, 36 wasted)
+    Order 1K-10K: 1508 L1 buckets, 5842 histograms in 404538ms, 
+18583 pairs saved, 80 remaining (1494 beneficial, 14 wasted)
+    Order 10K-100K: 218 L1 buckets, 645 histograms in 154066ms, 
+930 pairs saved, 2 remaining (217 beneficial, 1 wasted)
+    Order 100K+: 33 L1 buckets, 92 histograms in 40328ms, 104 pairs saved, 
+1 remaining (33 beneficial, 0 wasted)
+
+  Top 10 most expensive histogram calls:
+    [order, L1size, histMs, pairsSaved, pairsRemaining]
+    [ 11520, 15, 4375, 105, 0 ]
+    [ 5760, 28, 4188, 376, 2 ]
+    [ 5760, 15, 4078, 105, 0 ]
+    [ 28800, 5, 3390, 10, 0 ]
+    [ 576, 120, 3375, 7136, 4 ]
+    [ 322560, 7, 3359, 21, 0 ]
+    [ 57600, 7, 3328, 21, 0 ]
+    [ 960, 28, 3094, 376, 2 ]
+    [ 17280, 7, 2985, 21, 0 ]
+    [ 1440, 23, 2844, 253, 0 ]
+
+  Top 10 L1 buckets with most remaining pairs after histogram:
+    [order, L1size, histMs, pairsSaved, pairsRemaining]
+    [ 32, 374, 406, 69563, 188 ]
+    [ 32, 184, 171, 16713, 123 ]
+    [ 16, 173, 140, 14762, 116 ]
+    [ 64, 354, 422, 62379, 102 ]
+    [ 64, 150, 141, 11093, 82 ]
+    [ 32, 168, 125, 13950, 78 ]
+    [ 64, 273, 454, 37065, 63 ]
+    [ 48, 168, 110, 13966, 62 ]
+    [ 64, 225, 656, 25141, 59 ]
+    [ 32, 107, 93, 5622, 49 ]
+
+  A000638(14) = 75154 VERIFIED
+Phase D time: 930s
+
+Writing class-to-type mapping...
+  Written to /cygdrive/c/Users/jeffr/Downloads/Symmetric Groups/s14_final/veri\
+fication/class_to_type.g
+  Type size distribution: min=1 median=2 max=1318
+  Mapping time: 4s
+
+==================================================
+  VERIFICATION COMPLETE
+==================================================
+
+  A174511(14) = 7766
+  A000638(14) = 75154
+
+  Phase A: 7766/7766 fingerprint invariants verified
+  Phase B: 7523/7523 proofs verified, 4602 IdGroup types, union-find = 
+7766 types
+  Phase C: 3164 large types pairwise distinguished, 
+4602 IdGroup types disjoint
+  Phase D: 75154 classes pairwise non-conjugate (4833 IsConjugate tests, 
+5541698 L1 orbit-type elim, 1077206 L2 histogram elim)
+
+  Total time: 2260s
+
+# Finished at 2026-02-10 22:52:14.883114
+# Exit code: 0

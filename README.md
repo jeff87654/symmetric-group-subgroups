@@ -44,26 +44,18 @@ The 10,687 large groups were deduplicated using:
 
 ## Verification
 
-A self-contained GAP script is provided that anyone can run to independently verify A174511(14) = 7,766. It requires only GAP 4.12+ and the two input files — no precomputed intermediate data is trusted.
+A self-contained GAP script is provided that anyone can run to independently verify A174511(14) = 7,766. It requires only GAP 4.12+ and three input files — no precomputed intermediate data is trusted.
 
 ```bash
 cd s14_final/verification
-python launch_verify.py        # Full verification (~1 hour, 20 GB RAM)
+python launch_verify.py        # Full verification (~38 min, 20 GB RAM)
 ```
 
-The script proves five things:
-1. The 75,154 input groups are valid subgroups of S_14
-2. They are **pairwise non-conjugate** in S_14 (Phase C)
-3. They collapse to exactly **7,766 isomorphism types** via IdGroup + verified proof maps (Phase D)
-4. These 7,766 types are **pairwise non-isomorphic** via an invariant cascade (Phase E)
-5. Therefore A174511(14) = 7,766
-
-Faster modes are available after a full run generates cached invariants:
-```gap
-TRUST_INVARIANTS := true;   # Trust Phase B invariants (~15 min)
-SKIP_CONJUGACY := true;     # Also skip non-conjugacy checks (~10 min)
-Read("verify_a174511_14.g");
-```
+The script establishes both an upper bound and lower bound of 7,766 types:
+1. **Phase A**: Recomputes all fingerprint invariants from raw generators (7,766 reps)
+2. **Phase B**: Verifies 7,523 isomorphism proofs + computes IdGroup for 64,467 groups → union-find yields **7,766 types** (upper bound)
+3. **Phase C**: Confirms all 7,766 types are pairwise non-isomorphic via verified invariant differences (lower bound)
+4. **Phase D**: Verifies all 75,154 conjugacy class representatives are pairwise non-conjugate in S\_14, confirming **A000638(14) = 75,154** (3-level cascade: orbit types → element histogram → IsConjugate, reducing ~6.6M pairs to 4,833 tests)
 
 See [`s14_final/verification/README.md`](s14_final/verification/README.md) for full documentation.
 
@@ -79,8 +71,9 @@ s14_final/               - Final verified data and proofs
   s14_subgroups.g          - 75,154 conjugacy class representatives
   proof_all_remapped.g     - 7,523 isomorphism proofs
   verification/            - Self-contained verification script
-    verify_a174511_14.g    - GAP verification (Phases A-F)
+    verify_a174511_14.g    - GAP verification (Phases A-D)
     launch_verify.py       - Python launcher
+    class_to_type.g        - 75,154 → 7,766 class-to-type mapping
 triple_check/            - Triple check computation
   process_s14_subgroups.g  - Conjugacy class processing
   dedupe/                  - Isomorphism deduplication pipeline

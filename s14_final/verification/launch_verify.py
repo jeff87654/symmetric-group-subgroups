@@ -3,7 +3,7 @@ from datetime import datetime
 
 GAP_BASH = r"C:\Program Files\GAP-4.15.1\runtime\bin\bash.exe"
 script_path = "/cygdrive/c/Users/jeffr/Downloads/Symmetric Groups/s14_final/verification/verify_a174511_14.g"
-output_file = r"C:\Users\jeffr\Downloads\Symmetric Groups\s14_final\verification\verify_output.txt"
+output_file = r"C:\Users\jeffr\Downloads\Symmetric Groups\s14_final\verification\verify_output_phaseD_v2.txt"
 
 cmd = [GAP_BASH, "--login", "-c", f'/opt/gap-4.15.1/gap -q -o 20g "{script_path}"']
 
