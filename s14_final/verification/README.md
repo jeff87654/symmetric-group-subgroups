@@ -8,7 +8,7 @@ Self-contained proof that the symmetric group S\_14 has exactly **7,766 isomorph
 |------|------|-------------|
 | `s14_subgroups.g` | 24 MB | 75,154 conjugacy class representatives (permutation generators on {1..14}) |
 | `proof_all_remapped.g` | 4 MB | 7,523 isomorphism proofs (explicit generator maps) |
-| `type_fingerprints.g` | 2.2 MB | 7,766 type records with minimal distinguishing invariants |
+| `type_fingerprints.g` | 773 KB | 7,766 type records with minimal distinguishing invariants |
 
 The first two are in the parent directory (`s14_final/`). The fingerprint file is in this directory.
 
@@ -18,7 +18,7 @@ The first two are in the parent directory (`s14_final/`). The fingerprint file i
 
 - [GAP](https://www.gap-system.org/) 4.12+ with the SmallGroups library
 - Python 3 (for the launcher)
-- ~20 GB RAM recommended (`-o 20g`)
+- ~8 GB RAM recommended (`-o 8g`)
 
 ### Run
 
@@ -33,7 +33,7 @@ Read("verify_a174511_14.g");
 
 ## What the Script Proves
 
-The script establishes both an **upper bound** and a **lower bound** of 7,766 isomorphism types, proving A174511(14) = 7,766. It has three phases:
+The script establishes both an **upper bound** and a **lower bound** of 7,766 isomorphism types, proving A174511(14) = 7,766. It also verifies the completeness of the input conjugacy classes. Total runtime: ~37 minutes on a single core.
 
 ### Phase A: Verify fingerprint invariants
 
@@ -60,11 +60,11 @@ Each large type stores a minimal set of fields from this cost-ordered cascade:
 | `nilpotencyClass` | nilpotency class or -1 | 3 |
 | `numNormalSubs` | `Length(NormalSubgroups(G))` | 4 |
 | `autGroupOrder` | `Size(AutomorphismGroup(G))` | 72 |
-| `subgroupOrderProfile` | subgroup conjugacy class profile | 26 |
+| `subgroupOrderCounts` | subgroup order/class-size counts | 26 |
 
 Shared computation ensures expensive GAP objects (DerivedSubgroup, ConjugacyClasses, DerivedSeriesOfGroup) are computed at most once per type and reused across multiple fields.
 
-### Phase B: Verify proofs + build type mapping (~10-15 min)
+### Phase B: Verify proofs + build type mapping (~6 min)
 
 **Upper bound**: at most 7,766 types.
 
@@ -102,11 +102,11 @@ Shared computation ensures expensive GAP objects (DerivedSubgroup, ConjugacyClas
 | nilpotencyClass | 2 |
 | numNormalSubs | 2 |
 | autGroupOrder | 36 |
-| subgroupOrderProfile | 13 |
+| subgroupOrderCounts | 13 |
 
 - **No overlap** between IdGroup types and large types (disjoint order ranges verified)
 
-### Phase D: Verify conjugacy class completeness (optional, ~16 min)
+### Phase D: Verify conjugacy class completeness (~15 min)
 
 Confirms **A000638(14) = 75,154** by verifying that all 75,154 representatives are pairwise non-conjugate in S14. Uses a 3-level cascade to reduce ~6.6 million potential pairs to only 4,833 actual `IsConjugate` tests:
 
@@ -131,7 +131,7 @@ After all phases pass, writes `class_to_type.g` mapping each of the 75,154 conju
 | `analyze_minimal_fingerprints.py` | Script that produced the minimal fingerprints from the full version |
 | `phase_b_invariants.g` | 75,154 group invariants (optional, for reference) |
 | `class_to_type.g` | Maps each of 75,154 classes to one of 7,766 type indices (output) |
-| `verify_output_phaseD_v2.txt` | Full verification output log including Phase D statistics |
+| `verify_output.txt` | Full verification output log including Phase D statistics |
 
 ## Fingerprint Format
 
@@ -161,4 +161,4 @@ The verification establishes:
 2. The 75,154 groups collapse to exactly 7,766 isomorphism types via IdGroup + verified proofs (Phase B — upper bound)
 3. These 7,766 types are pairwise non-isomorphic via verified invariant differences (Phase C — lower bound)
 4. Therefore **A174511(14) = 7,766**
-5. (Optional) All 75,154 representatives are pairwise non-conjugate in S14 (Phase D), therefore **A000638(14) = 75,154**
+5. All 75,154 representatives are pairwise non-conjugate in S14 (Phase D), therefore **A000638(14) = 75,154**
