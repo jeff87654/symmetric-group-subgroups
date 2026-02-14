@@ -43,6 +43,13 @@ EXPECTED_IDG_TYPES := 8001;
 # EXPECTED_LARGE_TYPES := 8445;
 # EXPECTED_TYPES := 16446;
 
+# Optional phases (default: all enabled)
+# Set these to false before Read()ing this file to skip phases:
+#   RUN_PHASE_A := false;  # skip invariant recomputation (~24 min)
+#   RUN_PHASE_D := false;  # skip non-conjugacy verification (~43 min)
+if not IsBound(RUN_PHASE_A) then RUN_PHASE_A := true; fi;
+if not IsBound(RUN_PHASE_D) then RUN_PHASE_D := true; fi;
+
 IsIdGroupCompatible := function(ord)
     return ord < 2000 and not ord in [512, 768, 1024, 1536];
 end;
@@ -190,21 +197,20 @@ for _i in [1..EXPECTED_CLASSES] do
     _ord := Size(_G);
 
     # Orbit-type key for Phase D conjugacy testing
-    # [orbSize, transitiveId] per orbit — strictly more discriminating than
-    # orbit sizes alone.  TransitiveIdentification is a library lookup for
-    # degree ≤ 48; all our orbits are degree ≤ 15.
-    _orbs := Orbits(_G, [1..15]);
-    _orbTypes := [];
-    for _orb in _orbs do
-        if Length(_orb) = 1 then
-            Add(_orbTypes, [1, 1]);
-        else
-            Add(_orbTypes, [Length(_orb),
-                TransitiveIdentification(Action(_G, _orb))]);
-        fi;
-    od;
-    Sort(_orbTypes);
-    _orbKey[_i] := String(_orbTypes);
+    if RUN_PHASE_D then
+        _orbs := Orbits(_G, [1..15]);
+        _orbTypes := [];
+        for _orb in _orbs do
+            if Length(_orb) = 1 then
+                Add(_orbTypes, [1, 1]);
+            else
+                Add(_orbTypes, [Length(_orb),
+                    TransitiveIdentification(Action(_G, _orb))]);
+            fi;
+        od;
+        Sort(_orbTypes);
+        _orbKey[_i] := String(_orbTypes);
+    fi;
 
     if IsIdGroupCompatible(_ord) then
         _idg := IdGroup(_G);
@@ -429,6 +435,8 @@ _ClearCache();
 ## group from raw generators and recompute every invariant listed.
 ## IdGroup types were already verified in Phase B (IdGroup computation).
 ##############################################################################
+
+if RUN_PHASE_A then
 
 Print("=== PHASE A: Verify fingerprint invariants ===\n\n");
 phaseAStart := Runtime();
@@ -670,6 +678,10 @@ Print("Phase A time: ", Int((Runtime() - phaseAStart) / 1000), "s\n\n");
 
 _ClearCache();
 
+else
+    Print("=== PHASE A: SKIPPED (RUN_PHASE_A = false) ===\n\n");
+fi;
+
 ##############################################################################
 ## PHASE C: Verify non-isomorphism from fingerprint data -> lower bound
 ##
@@ -888,6 +900,8 @@ Print("Phase C time: ", Int((Runtime() - phaseCStart) / 1000), "s\n\n");
 ##         Different histograms => non-conjugate.
 ##   L3 — IsConjugate(S15, G, H) for remaining pairs.  Must all return false.
 ##############################################################################
+
+if RUN_PHASE_D then
 
 Print("=== PHASE D: Verify conjugacy class completeness ===\n\n");
 phaseDStart := Runtime();
@@ -1122,6 +1136,10 @@ Print("Phase D time: ", Int((Runtime() - phaseDStart) / 1000), "s\n\n");
 
 _ClearCache();
 
+else
+    Print("=== PHASE D: SKIPPED (RUN_PHASE_D = false) ===\n\n");
+fi;
+
 ##############################################################################
 ## Summary
 ##############################################################################
@@ -1138,17 +1156,25 @@ Print("  A000638(15) = ", EXPECTED_CLASSES, "\n\n");
 Print("  Phase B: ", _nPass, "/", _actualProofs,
       " proofs verified, ", _nIdgTypes,
       " IdGroup types, union-find = ", EXPECTED_TYPES, " types\n");
-Print("  Phase A: ", _nLargeVerified, "/", Length(_fpLargeTypes),
-      " large type fingerprints verified\n");
+if RUN_PHASE_A then
+    Print("  Phase A: ", _nLargeVerified, "/", Length(_fpLargeTypes),
+          " large type fingerprints verified\n");
+else
+    Print("  Phase A: SKIPPED\n");
+fi;
 Print("  Phase C: ", Length(_fpLargeTypes),
       " large types pairwise distinguished (",
       _nPairs, " pairs), ",
       _nIdgTypes, " IdGroup types disjoint\n");
-Print("  Phase D: ", _nConjTests, " IsConjugate tests, ",
-      EXPECTED_CLASSES, " classes verified non-conjugate\n");
-Print("    L1 orbit filter: ", _nOrbitTypeSplit, " pairs\n");
-Print("    L2 histogram filter: ", _nHistogramSplit, " pairs\n");
-Print("    L3 IsConjugate calls: ", _nConjTests, "\n");
+if RUN_PHASE_D then
+    Print("  Phase D: ", _nConjTests, " IsConjugate tests, ",
+          EXPECTED_CLASSES, " classes verified non-conjugate\n");
+    Print("    L1 orbit filter: ", _nOrbitTypeSplit, " pairs\n");
+    Print("    L2 histogram filter: ", _nHistogramSplit, " pairs\n");
+    Print("    L3 IsConjugate calls: ", _nConjTests, "\n");
+else
+    Print("  Phase D: SKIPPED\n");
+fi;
 Print("\n  Total time: ", Int(_totalTime / 1000), "s\n");
 
 QUIT;
