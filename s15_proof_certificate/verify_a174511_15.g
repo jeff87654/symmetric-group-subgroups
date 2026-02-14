@@ -384,25 +384,7 @@ _nTypes := Length(RecNames(_rootSet));
 
 Print("  Total types from union-find: ", _nTypes, "\n");
 
-# Compute expected: IdGroup types + large reps
-# Large reps = large indices whose root is themselves
-_nLargeReps := 0;
-_largeRepIndices := [];
-for _i in _largeIndices do
-    if _Find(_i) = _i then
-        _nLargeReps := _nLargeReps + 1;
-        Add(_largeRepIndices, _i);
-    else
-        # Check if root is also a large index
-        # (a large group's root should be another large group)
-        _root := _Find(_i);
-        if not _root in _largeRepIndices then
-            # Root might be a different large index already counted
-        fi;
-    fi;
-od;
-
-# More precise: count distinct roots among large indices
+# Count distinct roots among large indices
 _largeRootSet := rec();
 for _i in _largeIndices do
     _largeRootSet.(String(_Find(_i))) := true;
@@ -805,10 +787,9 @@ for _bk in _bkeys do
 
             # Check remaining expensive fields
             if not _distinguished then
-                for _fld in ["classSizes", "chiefFactorSizes",
-                             "derivedSeriesSizes", "nilpotencyClass",
-                             "numNormalSubs", "frattiniSize",
-                             "autGroupOrder", "subgroupOrderProfile"] do
+                for _fld in ["classSizes", "derivedSeriesSizes",
+                             "nilpotencyClass", "numNormalSubs",
+                             "frattiniSize", "autGroupOrder"] do
                     if IsBound(_tA.(_fld)) and IsBound(_tB.(_fld)) then
                         if _tA.(_fld) <> _tB.(_fld) then
                             _distinguished := true;
