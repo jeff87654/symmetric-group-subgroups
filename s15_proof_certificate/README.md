@@ -70,7 +70,7 @@ For each of the 8,437 large type representatives, rebuilds the group from raw ge
 
 ### Phase D: Verify conjugacy class completeness (~43 min)
 
-Confirms **A000638(15) = 159,129** by verifying that all 159,129 representatives are pairwise non-conjugate in S15. Uses a 3-level cascade:
+Given the known value A000638(15) = 159,129 (Holt), this phase verifies that our 159,129 representatives are in fact a complete list of conjugacy classes by showing they are pairwise non-conjugate in S15. Since there are exactly 159,129 conjugacy classes and our 159,129 groups are all distinct, no class is missing. Uses a 3-level cascade:
 
 1. **L1 -- Orbit types**: Sub-buckets by `[orbit_size, TransitiveIdentification]` per orbit on {1..15}
 2. **L2 -- Element histogram**: Sub-buckets by `(element_order, fixed_point_count)` histogram
@@ -101,4 +101,4 @@ The verification establishes:
 2. The 159,129 groups collapse to exactly 16,438 isomorphism types via IdGroup + verified proofs (Phase B -- upper bound)
 3. These 16,438 types are pairwise non-isomorphic via verified invariant differences (Phase C -- lower bound)
 4. Therefore **A174511(15) = 16,438**
-5. All 159,129 representatives are pairwise non-conjugate in S15 (Phase D), therefore **A000638(15) = 159,129**
+5. Given Holt's A000638(15) = 159,129, the 159,129 pairwise non-conjugate representatives (Phase D) form a complete list of conjugacy classes
