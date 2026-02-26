@@ -160,6 +160,11 @@ def get_candidate_files():
     candidates.append((os.path.join(DIFFICULT_DIR, "graph_iso_b1182_b1185_proofs.g"),
                         "Difficult/graph_iso_b1182_b1185_proofs.g"))
 
+    # S15 proofs lifted to S16 indices (S15 indices = S16 indices for 1..159129)
+    s16_processing_dir = os.path.join(os.path.dirname(BASE_DIR), "s16_processing")
+    candidates.append((os.path.join(s16_processing_dir, "s16_combined_proofs.g"),
+                        "s16_processing/s16_combined_proofs.g"))
+
     return candidates
 
 
