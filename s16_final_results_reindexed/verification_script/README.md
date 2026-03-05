@@ -12,6 +12,9 @@ cd s16_final_results_reindexed/verification_script
 # Full verification (~6 hrs)
 python run_verification.py
 
+# With conjugacy verification (~18-30 hrs)
+python run_verification.py --conjugacy
+
 # Faster run, skipping invariant recomputation (~3 hrs)
 python run_verification.py --skip-invariants
 
@@ -56,7 +59,9 @@ The **lower bound** (at least 43,626 types) is proven by showing that all 43,626
 
 Phase 2 performs the heaviest lifting: it loads all 686,165 generator lists (254 MB) into a single GAP session and recomputes every invariant claimed in the certificate. This includes rebuilding sigKeys for all 29,278 types that use them, recomputing element order histograms for all 15,230 types that claim histogram discrimination, and verifying the E-type cascade for 5,294 types. Every recomputed value is compared against the certificate, and any mismatch is reported as a failure. Phase 3 handles the 1,194 type pairs that require character table comparison (methods F and G) or explicit `IsomorphismGroups` calls (method H, 96 pairs), independently confirming that GAP cannot find an isomorphism between them.
 
-The full verification takes approximately 6 hours on a modern machine. For faster turnaround, `--skip-invariants` omits Phase 2 (saving ~3 hours) and `--skip-fgh` omits Phase 3 (saving ~30 minutes). Even with these flags, the upper bound is fully proven, and the lower bound is partially verified by the remaining phases. All GAP phases include automatic crash recovery: if a process is killed or runs out of memory, the orchestrator detects checkpoint files from prior progress and relaunches, resuming from where it left off.
+An optional **Phase 5** independently confirms A000638(16) = 686,165 by verifying that the 686,165 conjugacy class representatives are truly pairwise non-conjugate in S₁₆. Strictly speaking, the upper bound proof assumes the input list of 686,165 classes is correct — Phase 5 verifies this assumption. Classes are grouped into (type, orbit-type) buckets: two classes can only be conjugate if they have the same isomorphism type and the same orbit structure on 16 points. This reduces the problem from ~2.4×10¹¹ potential pairs to 70 million. Within large buckets, a second round of sub-bucketing uses conjugacy class histograms — for each conjugacy class of the group, the triple (element order, fixed point count, class size) — to further eliminate pairs. The remaining pairs are tested with GAP's `IsConjugate`. Eight parallel workers handle the 50,337 non-singleton buckets with interleaved assignment for load balancing.
+
+The default run (Phases 0–4) takes approximately 6 hours. Adding `--conjugacy` for Phase 5 adds roughly 12–24 hours depending on hardware. For faster turnaround, `--skip-invariants` omits Phase 2 (saving ~3 hours) and `--skip-fgh` omits Phase 3 (saving ~30 minutes). Even with these flags, the upper bound is fully proven, and the lower bound is partially verified by the remaining phases. All GAP phases include automatic crash recovery: if a process is killed or runs out of memory, the orchestrator detects checkpoint files from prior progress and relaunches, resuming from where it left off.
 
 ## Verification Phases
 
@@ -67,6 +72,7 @@ The full verification takes approximately 6 hours on a modern machine. For faste
 | 2 | Certificate invariant recomputation | ~3 hrs | Single GAP process loads all 686,165 subgroup generator lists, recomputes every invariant (order, IdGroup, sigKey, histogram, E7 cascade, E-type discriminants) from scratch, compares against certificate |
 | 3 | F/G/H discrimination | ~30 min | Recomputes CharacterTable comparisons (F/G methods) and explicit `IsomorphismGroups` tests (H method) for 1,194 type pairs |
 | 4 | Class-to-type mapping rebuild | ~3 min | 2 parallel workers independently rebuild the 686,165-entry class→type mapping by following proof chains and computing IdGroup, then compare against provided mapping |
+| 5 | Conjugacy verification (optional) | ~12-24 hrs | 8 parallel workers verify all 686,165 classes are pairwise non-conjugate within (type, orbit-type) buckets, confirming A000638(16) = 686,165. Enable with `--conjugacy`. |
 
 ## Command-Line Options
 
@@ -75,6 +81,8 @@ python run_verification.py [OPTIONS]
 
   --skip-invariants    Skip Phase 2 (saves ~3 hrs)
   --skip-fgh           Skip Phase 3 (saves ~30 min)
+  --conjugacy          Include Phase 5: conjugacy verification (~12-24 hrs)
+  --conj-workers N     Number of workers for Phase 5 (default: 8)
   --phase 0,1,4        Run only specific phases
   --resume             Skip phases whose results are already complete
   --gap-path PATH      Path to GAP binary (or Cygwin bash.exe on Windows)
@@ -108,9 +116,12 @@ Core scripts (all in `verification_script/`):
 | `verify_cert_from_subgroups.g` | GAP | Phase 2: invariant recomputation |
 | `verify_cert_phase78.g` | GAP | Phase 3: F/G/H discrimination |
 | `verify_class_to_type_worker.g` | GAP | Phase 4: class-to-type rebuild |
+| `build_conjugacy_buckets.py` | Python | Phase 5: build (type, orbit-type) buckets |
+| `verify_smart_worker.g` | GAP | Phase 5: conjugacy verification worker |
 
 ## Sample Output
 
+Default run (Phases 0–4):
 ```
 ================================================================
   A174511(16) VERIFICATION RESULTS
@@ -122,13 +133,23 @@ Core scripts (all in `verification_script/`):
   Phase 2: PASS  — Certificate invariants (43,626 types)
   Phase 3: PASS  — F/G/H discrimination (1,098 F/G + 96 H pairs)
   Phase 4: PASS  — Class-to-type rebuild (686,165 classes)
+  Phase 5: SKIPPED  — Conjugacy verification (686,165 classes non-conjugate)
 
   UPPER BOUND: 686,165 = 43,626 reps + 154,656 proofs + 487,883 IdGroup   [VERIFIED]
+  A000638(16): 686,165 (not independently verified — use --conjugacy)
   LOWER BOUND: 43,626 types pairwise non-isomorphic (methods A-H)          [VERIFIED]
 
   >>> A174511(16) = 43,626   [INDEPENDENTLY VERIFIED] <<<
 
 ================================================================
+```
+
+With `--conjugacy` (Phases 0–5):
+```
+  Phase 5: PASS  — Conjugacy verification (686,165 classes non-conjugate)
+
+  UPPER BOUND: 686,165 = 43,626 reps + 154,656 proofs + 487,883 IdGroup   [VERIFIED]
+  A000638(16): 686,165 classes pairwise non-conjugate                      [VERIFIED]
 ```
 
 ## Requirements
