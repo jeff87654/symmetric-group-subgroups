@@ -74,34 +74,29 @@ python run_verification.py              # Full verification (~6 hrs, 16 GB RAM)
 python run_verification.py --skip-invariants   # Faster (~3 hrs)
 ```
 
-Starting from a single 14 MB archive (`s16_final_results.7z`), the script runs 5 phases:
-- **Phase 0**: Structural integrity (Python, ~2 min)
-- **Phase 1**: Validates 154,656 isomorphism proofs (4 GAP workers, ~5 min)
-- **Phase 2**: Recomputes all certificate invariants from raw generators (1 GAP worker, ~3 hrs)
-- **Phase 3**: Verifies F/G/H discrimination via CharacterTable / IsomorphismGroups (~30 min)
-- **Phase 4**: Independently rebuilds the 686,165-entry class-to-type mapping (~3 min)
+The verification proves A174511(16) = 43,626 by establishing matching upper and lower bounds. Everything starts from a single 14 MB compressed archive (`s16_final_results.7z`) containing five data files: the 686,165 subgroup generator lists, a type certificate with 43,626 records, 154,656 isomorphism proofs, a class-to-type mapping, and extended invariant data. The orchestrator (`run_verification.py`) extracts these files, detects the local GAP installation, and runs five phases in sequence with automatic crash recovery.
 
-See [`s16_final_results_reindexed/verification_script/README.md`](s16_final_results_reindexed/verification_script/README.md) for full details.
+The **upper bound** (at most 43,626 types) is proven by showing that every one of the 686,165 conjugacy classes maps to one of 43,626 type representatives. Phase 1 validates all 154,656 isomorphism proofs: for each proof claiming that class *d* is isomorphic to representative *r*, the verifier reconstructs both groups from their generators, confirms they have the same order, checks that the proof generators lie in the duplicate group, and verifies that the generator-to-image mapping extends to a valid group homomorphism via `GroupHomomorphismByImages`. Phase 4 then independently rebuilds the entire class-to-type mapping: for each of the 686,165 classes, it determines the type either by finding the class among the type representatives, following a validated proof chain to a representative, or computing `IdGroup` and matching against the certificate's B-type entries. The rebuilt mapping is compared entry-by-entry against the provided one, and the arithmetic identity 686,165 = 43,626 + 154,656 + 487,883 is confirmed.
 
-### S₁₄ Verification
+The **lower bound** (at least 43,626 types) is proven by showing that all 43,626 type representatives are pairwise non-isomorphic. The certificate assigns each adjacent pair of types a discrimination method (A through H) and the verifier recomputes the distinguishing invariant from scratch. Methods A and B are trivial: types with unique group orders or unique `IdGroup` identifiers are obviously distinct. Method C uses the "sigKey" — a tuple of order, derived subgroup size, conjugacy class count, derived length, and abelian invariants — which the verifier recomputes from raw generators and checks against the certificate. Method D uses element order histograms (the distribution of element orders in the group), recomputed by iterating over all group elements. Method E applies a multi-level cascade of progressively more expensive invariants (Sylow subgroup structure, center size, Frattini subgroup, and more). Methods F and G use character table comparison via GAP's `CharacterTable`, and method H calls `IsomorphismGroups` directly and confirms it returns `fail`.
+
+Phase 2 performs the heaviest lifting: it loads all 686,165 generator lists (254 MB) into a single GAP session and recomputes every invariant claimed in the certificate. This includes rebuilding sigKeys for all 29,278 types that use them, recomputing element order histograms for all 15,230 types that claim histogram discrimination, and verifying the E-type cascade for 5,294 types. Every recomputed value is compared against the certificate, and any mismatch is reported as a failure. Phase 3 handles the 1,194 type pairs that require character table comparison (methods F and G) or explicit `IsomorphismGroups` calls (method H, 96 pairs), independently confirming that GAP cannot find an isomorphism between them.
+
+The full verification takes approximately 6 hours on a modern machine. For faster turnaround, `--skip-invariants` omits Phase 2 (saving ~3 hours) and `--skip-fgh` omits Phase 3 (saving ~30 minutes). Even with these flags, the upper bound is fully proven, and the lower bound is partially verified by the remaining phases. All GAP phases include automatic crash recovery: if a process is killed or runs out of memory, the orchestrator detects checkpoint files from prior progress and relaunches, resuming from where it left off.
+
+See [`s16_final_results_reindexed/verification_script/README.md`](s16_final_results_reindexed/verification_script/README.md) for full details including command-line options and sample output.
+
+### S₁₄ and S₁₅ Verification
 
 ```bash
 cd s14_final/verification
-python launch_verify.py        # ~38 min, 20 GB RAM
-```
+python launch_verify.py        # S14: ~38 min, 20 GB RAM
 
-See [`s14_final/verification/README.md`](s14_final/verification/README.md) for details.
-
-### S₁₅ Verification
-
-```bash
 cd s15_proof_certificate
-python launch_verify.py         # Full verification (~70 min, 20 GB RAM)
+python launch_verify.py        # S15: ~70 min, 20 GB RAM
 ```
 
-All verification scripts establish an **upper bound** and **lower bound** that match:
-- **Upper bound**: Every conjugacy class is accounted for (type representative, proof duplicate, or IdGroup-collapsed)
-- **Lower bound**: All type representatives are pairwise non-isomorphic (proven by invariant discrimination or explicit non-isomorphism)
+See [`s14_final/verification/README.md`](s14_final/verification/README.md) and the S₁₅ proof certificate directory for details. Both follow the same upper/lower bound structure as S₁₆.
 
 ## Repository Structure
 
