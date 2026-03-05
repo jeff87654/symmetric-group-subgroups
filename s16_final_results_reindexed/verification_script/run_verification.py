@@ -3,7 +3,7 @@
 run_verification.py — Standalone A174511(16) = 43,626 verifier.
 
 Starting from s16_final_results.7z (14 MB), this script extracts the data,
-then runs five independent verification phases to prove:
+then runs up to six verification phases to prove:
 
   UPPER BOUND (≤ 43,626):
     All 686,165 conjugacy classes collapse to at most 43,626 isomorphism
@@ -19,6 +19,7 @@ Phases:
   2  Certificate invariant recomp.   (GAP, 1 worker, ~2-3 hrs)
   3  F/G/H discrimination            (GAP, 1 worker, ~30 min)
   4  Class-to-type mapping rebuild   (GAP, 2 workers, ~3 min)
+  5  Conjugacy verification          (GAP, 8 workers, ~12-24 hrs, optional)
 
 Requirements:
   - Python 3.6+
@@ -27,9 +28,10 @@ Requirements:
   - ~16 GB RAM recommended (50 GB GAP workspace for Phase 2)
 
 Usage:
-  python run_verification.py                    # Full run (~6 hrs)
+  python run_verification.py                    # Phases 0-4 (~6 hrs)
   python run_verification.py --skip-invariants  # Skip Phase 2 (~3 hrs faster)
   python run_verification.py --skip-fgh         # Skip Phase 3 (~30 min faster)
+  python run_verification.py --conjugacy        # Include Phase 5 (~12-24 hrs extra)
   python run_verification.py --phase 0          # Just structural checks
   python run_verification.py --resume           # Skip completed phases
   python run_verification.py --gap-path /path   # Custom GAP path
@@ -511,6 +513,86 @@ def phase_4(config, n_workers, memory):
     return total_fail == 0 and total_pass == EXPECTED_CLASSES
 
 # ============================================================================
+# Phase 5: Conjugacy verification
+# ============================================================================
+
+def phase_5_build_buckets():
+    """Build conjugacy buckets from class-to-type mapping and subgroups."""
+    bucket_file = os.path.join(BASE_DIR, "conj_buckets.g")
+    if os.path.exists(bucket_file):
+        print("  conj_buckets.g already exists — skipping build.")
+        return True
+
+    banner("Phase 5a: Build conjugacy buckets")
+    print("  Building (type, orbit-type) buckets from subgroups...")
+    rc = subprocess.run(
+        [sys.executable, os.path.join(SCRIPT_DIR, "build_conjugacy_buckets.py"),
+         "--base-dir", BASE_DIR],
+        capture_output=True, text=True)
+    if rc.returncode == 0:
+        print("    PASS")
+        # Print summary from output
+        for line in rc.stdout.splitlines():
+            if "Non-singleton" in line or "Written" in line:
+                print(f"    {line.strip()}")
+        return True
+    else:
+        print(f"    FAIL (exit {rc.returncode})")
+        print(rc.stdout[-500:] if rc.stdout else "")
+        print(rc.stderr[-500:] if rc.stderr else "")
+        return False
+
+
+def phase_5(config, n_workers, memory):
+    """Verify all 686,165 classes are pairwise non-conjugate within types."""
+    banner("Phase 5: Conjugacy verification (A000638(16) = 686,165)")
+
+    # Step 1: Build buckets if needed
+    if not phase_5_build_buckets():
+        return False
+
+    # Check if already complete
+    all_done = True
+    for w in range(1, n_workers + 1):
+        rf = os.path.join(SCRIPT_DIR,
+                          f"verify_conj_worker_{w}_results.txt")
+        if not result_complete(rf):
+            all_done = False
+    if all_done:
+        print("  Already complete — skipping.")
+        return True
+
+    ok, attempts = run_gap_workers(
+        config, "verify_smart_worker.g", n_workers, memory,
+        extra_vars_fn=lambda w: {"SUB_THRESHOLD": 5},
+        max_attempts=15, label="conj")
+
+    total_checked = total_conjugate = 0
+    for w in range(1, n_workers + 1):
+        rf = os.path.join(SCRIPT_DIR,
+                          f"verify_conj_worker_{w}_results.txt")
+        try:
+            with open(rf) as f:
+                for line in f:
+                    m = re.search(
+                        r"Complete: (\d+) checked, (\d+) skipped, "
+                        r"(\d+) conjugate, (\d+) buckets", line)
+                    if m:
+                        total_checked += int(m.group(1))
+                        total_conjugate += int(m.group(3))
+        except FileNotFoundError:
+            total_conjugate += 1  # treat missing as failure
+
+    print(f"\n  Conjugacy verification: {total_checked} pairs checked, "
+          f"{total_conjugate} conjugate found")
+    if total_conjugate > 0:
+        print("  FAIL: Conjugate pairs detected!")
+        return False
+    print("  PASS: All classes non-conjugate within their type buckets")
+    return True
+
+
+# ============================================================================
 # Final summary
 # ============================================================================
 
@@ -530,9 +612,10 @@ def print_summary(results, phases_run, t_start):
         2: "Certificate invariants (43,626 types)",
         3: "F/G/H discrimination (1,098 F/G + 96 H pairs)",
         4: "Class-to-type rebuild (686,165 classes)",
+        5: "Conjugacy verification (686,165 classes non-conjugate)",
     }
     all_run_pass = True
-    for p in range(5):
+    for p in range(6):
         if p in results:
             status = "PASS" if results[p] else "FAIL"
             if not results[p]:
@@ -550,9 +633,18 @@ def print_summary(results, phases_run, t_start):
     # Phase 3 covers F/G/H. Either one is sufficient for its method set.
     lower_partial = results.get(0, False) and (results.get(2, False) or results.get(3, False))
 
-    if upper:
+    conj_verified = results.get(5, False)
+    if upper and conj_verified:
         print(f"  UPPER BOUND: 686,165 = 43,626 reps + 154,656 proofs "
               f"+ 487,883 IdGroup   [VERIFIED]")
+        print(f"  A000638(16): 686,165 classes pairwise non-conjugate  "
+              f"                    [VERIFIED]")
+    elif upper:
+        print(f"  UPPER BOUND: 686,165 = 43,626 reps + 154,656 proofs "
+              f"+ 487,883 IdGroup   [VERIFIED]")
+        if 5 not in phases_run:
+            print(f"  A000638(16): 686,165 (not independently verified — "
+                  f"use --conjugacy)")
     else:
         print(f"  UPPER BOUND: NOT FULLY VERIFIED")
 
@@ -601,6 +693,13 @@ def main():
                              "and IsomorphismGroups). Saves ~30 min. Without this, "
                              "the lower bound relies only on Phase 2 invariant checks "
                              "for the 1,194 F/G/H-method type pairs.")
+    parser.add_argument("--conjugacy", action="store_true",
+                        help="Include Phase 5: verify all 686,165 conjugacy classes "
+                             "are pairwise non-conjugate within each isomorphism type, "
+                             "independently confirming A000638(16) = 686,165. "
+                             "Adds ~12-24 hrs. Not included by default.")
+    parser.add_argument("--conj-workers", type=int, default=8,
+                        help="Number of workers for Phase 5 (default: 8)")
     parser.add_argument("--resume", action="store_true",
                         help="Skip phases whose results are already complete")
     parser.add_argument("--gap-path", type=str, default=None,
@@ -620,6 +719,8 @@ def main():
             phases.remove(2)
         if args.skip_fgh:
             phases.remove(3)
+        if args.conjugacy:
+            phases.append(5)
     t_start = datetime.now()
     results = {}
 
@@ -631,6 +732,9 @@ def main():
         print(f"  --skip-invariants: Phase 2 (cert invariant recomp) SKIPPED")
     if args.skip_fgh:
         print(f"  --skip-fgh: Phase 3 (F/G/H discrimination) SKIPPED")
+    if 5 in phases:
+        print(f"  --conjugacy: Phase 5 (non-conjugacy) ENABLED "
+              f"({args.conj_workers} workers)")
     print(f"{'='*64}")
 
     # Phase 0: Extract + structural
@@ -649,9 +753,9 @@ def main():
     else:
         results[0] = True  # assume OK if not requested
 
-    # Detect GAP for phases 1-4
+    # Detect GAP for phases 1-5
     config = None
-    if any(p in phases for p in [1, 2, 3, 4]):
+    if any(p in phases for p in [1, 2, 3, 4, 5]):
         config = detect_gap(args.gap_path)
         print(f"  GAP config: cygwin={config['cygwin']}, "
               f"base={config['cyg_base']}")
@@ -671,6 +775,11 @@ def main():
     # Phase 4: Class-to-type rebuild
     if 4 in phases:
         results[4] = phase_4(config, n_workers=2, memory="32g")
+
+    # Phase 5: Conjugacy verification (optional)
+    if 5 in phases:
+        results[5] = phase_5(config, n_workers=args.conj_workers,
+                             memory=args.memory)
 
     ok = print_summary(results, phases, t_start)
     return 0 if ok else 1

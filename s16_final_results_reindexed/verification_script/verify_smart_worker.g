@@ -3,23 +3,37 @@
 # to sub-bucket within (type, orbit-type) buckets.
 #
 # Parameters (set before Read):
-#   WORKER_ID   - worker number (1..NUM_WORKERS)
-#   NUM_WORKERS - total workers
-#   SUB_THRESHOLD - min bucket size to use CC histogram sub-bucketing
+#   WORKER_ID    - worker number (1..WORKER_TOTAL)
+#   WORKER_TOTAL - total workers
+#   BASE_DIR     - path to s16_final_results_reindexed/
+#   SUB_THRESHOLD - min bucket size to use CC histogram sub-bucketing (optional, default 5)
 #
-# Buckets are interleaved: worker k gets buckets k, k+NUM_WORKERS, k+2*NUM_WORKERS, ...
+# Buckets are interleaved: worker k gets buckets k, k+WORKER_TOTAL, k+2*WORKER_TOTAL, ...
 # Since buckets are sorted by size ascending, this naturally balances load.
+#
+# Output: verify_conj_worker_N_results.txt in verification_script/
 
-if not IsBound(basedir) then
-    basedir := "/cygdrive/c/Users/jeffr/Downloads/Symmetric Groups/s16_final_results_reindexed/";
+if not IsBound(BASE_DIR) then
+    BASE_DIR := "/cygdrive/c/Users/jeffr/Downloads/Symmetric Groups/s16_final_results_reindexed/";
 fi;;
 
+# Support legacy variable names
+if not IsBound(WORKER_TOTAL) and IsBound(NUM_WORKERS) then
+    WORKER_TOTAL := NUM_WORKERS;
+fi;;
+if not IsBound(SUB_THRESHOLD) then
+    SUB_THRESHOLD := 5;
+fi;;
+
+_resultFile := Concatenation(BASE_DIR, "verification_script/verify_conj_worker_",
+                             String(WORKER_ID), "_results.txt");;
+
 Print("W", WORKER_ID, ": Loading subgroups...\n");
-subs := ReadAsFunction(Concatenation(basedir, "s16_subgroups.g"))();;
+subs := ReadAsFunction(Concatenation(BASE_DIR, "s16_subgroups.g"))();;
 Print("W", WORKER_ID, ": Loaded ", Length(subs), " subgroups\n");
 
 Print("W", WORKER_ID, ": Loading buckets...\n");
-Read(Concatenation(basedir, "conj_buckets.g"));;
+Read(Concatenation(BASE_DIR, "conj_buckets.g"));;
 numBuckets := Length(CONJ_BUCKETS);;
 Print("W", WORKER_ID, ": Loaded ", numBuckets, " buckets\n");
 
@@ -59,7 +73,7 @@ myBuckets := [];;
 idx := WORKER_ID;;
 while idx <= numBuckets do
   Add(myBuckets, idx);
-  idx := idx + NUM_WORKERS;
+  idx := idx + WORKER_TOTAL;
 od;;
 
 myTotalPairs := 0;;
@@ -163,5 +177,14 @@ else
   Print("  RESULT: CONJUGATE PAIRS DETECTED (FAILED)\n");
 fi;
 Print("========================================\n");
+
+# Write results file for orchestrator
+PrintTo(_resultFile,
+  "# verify_smart_worker results\n",
+  "# Worker ", WORKER_ID, "/", WORKER_TOTAL, "\n",
+  "# Complete: ", totalChecked, " checked, ",
+  totalSkipped, " skipped, ",
+  conjugateFound, " conjugate, ",
+  bucketsDone, " buckets (", elapsed, "s)\n");
 
 QUIT;
