@@ -60,6 +60,36 @@ rec(
 
 **Total**: 146 + 14,202 + 8,773 + 14,073 + 3,245 + 3,173 + 14 = **43,626**
 
+### Invariant Details
+
+- **sigKey**: `[order, derivedSubgroupSize, nrConjugacyClasses, derivedLength, abelianInvariants]`
+  - `derivedLength = -1` for non-solvable groups
+- **histogram**: Element-order histogram — for each element order `d` dividing `|G|`,
+  the number of elements of order `d`, formatted as a sorted list of `[d, count]` pairs
+- **crpfHash**: Canonical Row-Power Fingerprint hash — a compact isomorphism
+  invariant derived from the character table.
+
+  **Construction.** For a group G with n conjugacy classes, let `ct` be its
+  character table, `Irr(ct)` the irreducible characters, and `PowerMap(ct, j)`
+  the map sending class i to the class containing j-th powers of elements in i.
+  For each conjugacy class i, form the fingerprint:
+
+  ```
+  fp[i] = [ [PowerMap(ct,1)[i], ..., PowerMap(ct,n)[i]], chi_1(i), chi_2(i), ..., chi_k(i) ]
+  ```
+
+  Sort the list `[fp[1], ..., fp[n]]` lexicographically, convert to a string,
+  and take the first 16 hex digits of its SHA-256 hash.
+
+  **Why it is an isomorphism invariant.** An isomorphism `phi: G -> H` induces a
+  bijection on conjugacy classes that (1) preserves character values (since
+  `chi(phi(g)) = (chi . phi)(g)` and composition with an isomorphism permutes
+  the irreducible characters), and (2) commutes with power maps (since
+  `phi(g^j) = phi(g)^j`). Therefore the *multiset* of fingerprints is the same
+  for isomorphic groups. Sorting makes this canonical, so any two isomorphic
+  groups produce the same sorted fingerprint list and thus the same hash.
+  Conversely, different hashes guarantee non-isomorphism.
+
 ### Proof File Structure
 
 Each proof in `s16_proofs.g` establishes that a duplicate conjugacy class
