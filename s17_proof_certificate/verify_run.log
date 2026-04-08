@@ -1,0 +1,110 @@
+A174511(17) Verification Pipeline
+Started: 2026-04-07 15:33:31.450722
+Workers: 3
+============================================================
+PHASE 0: Setup
+============================================================
+  s17_subgroups_cycles.g: already decompressed
+  Decompressing s17_proofs.g.gz ... done (176.3 MB)
+  Decompressing s17_idgroup_map.g.gz ... done (41.6 MB)
+  s17_verification_certificate_v5.g: copied
+
+============================================================
+PHASE 1: Certificate Internal Consistency
+============================================================
+  Total types: 84246 OK
+  Type numbers: contiguous 1..84246 OK
+  Indices: all unique OK
+  A-types: 176 all have unique orders OK
+  C-types: 16880 unique sigKeys OK
+  D-types: 32646 unique (sk,h) OK
+  E-types: 5963 unique (sk,h,aut) OK
+  F-types: 5360 unique crpfHash in bucket OK
+  G-types: 22 in 11 pairs OK
+
+  Phase 1: PASS
+
+============================================================
+PHASE 2: Proof Validation (389889 proofs, 3 workers)
+============================================================
+  Launching 3 workers...
+  Proofs validated: 389889/389889 (441s)
+
+  Phase 2: PASS
+
+============================================================
+PHASE 3: Invariant Verification (84246 types, 3 workers)
+============================================================
+  Launching 3 workers...
+  Orders:     35040/35040 verified
+  SigKeys:    11801/11801 verified
+  Histograms: 10970/10970 verified
+  |Aut|:      5527/5527 verified
+  (2425s)
+
+  Phase 3: PASS
+
+============================================================
+PHASE 3b: crpfHash Verification (5358 types, 3 workers)
+============================================================
+  Launching 3 workers...
+  crpfHash: 5358/5358 verified (3385s)
+
+  Phase 3b: PASS
+
+============================================================
+PHASE 4: G-pair Verification (11 pairs via IsomorphismGroups)
+============================================================
+  Running IsomorphismGroups on 11 pairs...
+  NOT ISO: 11/11, ISO: 0 (1654s)
+
+  Phase 4: PASS
+
+============================================================
+PHASE 5: Class-to-Type Map + A174511(n)
+============================================================
+  Mapped: 1,466,358 / 1,466,358
+    Via type rep: 84,246
+    Via IdGroup:  992,223
+    Via proof:    389,889
+
+  A174511(n):
+     n   A000638(n)   A174511(n)      New
+  ----------------------------------------
+     0            1            1        1
+     1            1            1        0
+     2            2            2        1
+     3            4            4        2
+     4           11            9        5
+     5           19           16        7
+     6           56           29       13
+     7           96           55       26
+     8          296          137       82
+     9          554          241      104
+    10        1,593          453      212
+    11        3,094          894      441
+    12       10,723        2,065    1,171 OK
+    13       20,832        3,845    1,780 OK
+    14       75,154        7,766    3,921 OK
+    15      159,129       16,438    8,672
+    16      686,165       43,626   27,188
+    17    1,466,358       84,246   40,620
+
+  Class-to-type map written to C:\Users\jeffr\Downloads\Symmetric Groups\s17_proof_certificate\work\s17_class_to_type_map.g
+
+  Phase 5: PASS
+
+============================================================
+SUMMARY
+============================================================
+  phase0: PASS
+  phase1: PASS
+  phase2: PASS
+  phase3: PASS
+  phase3b: PASS
+  phase4: PASS
+  phase5: PASS
+
+  *** A174511(17) = 84246 VERIFIED ***
+
+Finished: 2026-04-07 17:45:37.406309
