@@ -1,195 +1,123 @@
-# A174511(17) = 84,246 — Proof Certificate and Verification
+# A174511(17) = 84,244 — Proof Certificate and Verification
 
-**Result**: There are exactly **84,246** isomorphism types of subgroups of the
-symmetric group S_17.
+**Result**: There are exactly **84,244** isomorphism types of subgroups of the symmetric group S₁₇.
 
-This directory contains a self-contained, reproducible verification pipeline.
-Anyone with GAP 4.15+ and Python 3.8+ can independently verify the result.
+> **Correction (2026-09-28).** An earlier version of this certificate (v5) reported 84,246. Two pairs
+> of isomorphic groups had been counted as distinct types. Both errors started with a GAP bug:
+> `IsomorphismGroups` returned `fail` for isomorphic groups (GAP issue
+> [#6537](https://github.com/gap-system/gap/issues/6537)). One of them was then also "confirmed" by a
+> character-table hash that is not an isomorphism invariant. See
+> **[CORRECTION_A174511_17.md](CORRECTION_A174511_17.md)** for the causes, the evidence, and the audit
+> that re-established every separation.
 
-## Quick Start
+This directory contains a self-contained, reproducible verification pipeline. Anyone with GAP 4.15+
+and Python 3.9+ can check the result independently.
+
+## Quick start
 
 ```bash
-python verify_a174511_17.py              # Run full verification (~2-3 hours)
-python verify_a174511_17.py --workers 6  # Use 6 parallel GAP workers (faster)
-python verify_a174511_17.py --skip-gap   # Python-only checks (~10 seconds)
+python verify_a174511_17_v6.py --workers 2                              # full verification (~10-12 h on 2 workers)
+python verify_a174511_17_v6.py --phases 0,1 --workers 2                 # Python-only consistency checks (~1 min)
+python verify_a174511_17_v6.py --workers 2 --reuse-tables audit/tables  # reuse saved character tables (~4-6 h)
 ```
 
-## Data Files
+## Data files
 
-All data lives in `data/`. Compressed files are decompressed to `work/` at runtime.
+| File | Contents |
+|------|----------|
+| `data/s17_subgroups_cycles.g.gz` | 1,466,358 conjugacy class representatives of subgroups of S₁₇ (generators in cycle notation) |
+| `data/s17_verification_certificate_v6.g` | 84,244 type records: representative class index, method, invariants |
+| `data/s17_proofs_v6.g.gz` | 389,891 isomorphism proofs (duplicate class → representative class, generators and images) |
+| `data/s17_idgroup_map.g.gz` | [order, id] for the 1,015,460 classes whose order GAP's SmallGroups library identifies |
+| `audit/tables/` | full character tables of all 11,345 types of v5's categories E/F/G (from the 2026-09 audit) |
+| `v6_gap/` | GAP code used by the verifier, and `ctinv.py` (the character-table invariant) |
 
-| File | Compressed | Raw | Contents |
-|------|-----------|-----|----------|
-| `s17_subgroups_cycles.g.gz` | 7.7 MB | 191 MB | 1,466,358 conjugacy class representatives (generators as permutations) |
-| `s17_proofs.g.gz` | 14 MB | 176 MB | 389,889 isomorphism proofs (generators + images defining a homomorphism) |
-| `s17_idgroup_map.g.gz` | 3.7 MB | 42 MB | IdGroup lookups mapping 1,015,460 class indices to [order, id] pairs |
-| `s17_verification_certificate_v5.g` | 8.7 MB | — | 84,246 type records with method, invariants, and representative index |
+The v5 files (`s17_verification_certificate_v5.g`, `s17_proofs.g.gz`, `verify_a174511_17.py`) are
+kept unchanged for the record.
 
-Total compressed: ~34 MB.
+## Certificate structure
 
-## Certificate Structure
-
-The certificate file (`s17_verification_certificate_v5.g`) contains one record
-per isomorphism type. Each record has the form:
+One record per isomorphism type:
 
 ```gap
-rec(
-  t := 42,              # Type number (1..84246)
-  i := 105327,          # Index into s17_subgroups_cycles.g (representative)
-  m := "D",             # Method used to distinguish this type (see below)
-  o := 720,             # Group order
-  sk := "[720,360,22,3,[2]]",  # sigKey (if method C or higher)
-  h := "[1,44,...]",    # Element-order histogram (if method D or higher)
-  aut := 1440,          # |Aut(G)| (if method E or higher)
-  crpf := "a3b2c1...",  # Character table fingerprint hash (if method F or higher)
-  pair := 42001         # Paired type number (method G only)
-)
+rec(t := 42, i := 105327, m := "D", o := 720, sk := [...], h := [...])
 ```
 
-### Classification Methods
+Here `t` is the type number (1..84244), `i` the index of the representative class in
+`s17_subgroups_cycles.g`, and `m` the method that distinguishes this type from all others:
 
-Every type is assigned a **method** indicating how it is distinguished from all
-other types. The methods form a cascade of increasingly expensive invariants:
+| Method | Count | Distinguished from every other type by |
+|--------|------:|----------------------------------------|
+| **A** | 176 | its order |
+| **B** | 24,068 | its SmallGroups identifier `id := [order, IdGroup]` |
+| **C** | 16,880 | its sigKey `sk := [order, \|G'\|, #classes, derived length (−1 if non-solvable), abelian invariants]` |
+| **D** | 32,658 | its (sigKey, element-order histogram `h`) |
+| **H** | 10,458 | its label-free character-table invariant `ctinv`, within its (sigKey, histogram) bucket |
+| **G** | 4 (2 pairs) | its pair partner has an identical character table; separated by `ns`, the `IdGroup`s of the normal subgroups of order `nsord`, and independently by complete coset-action search |
 
-| Method | Count | Meaning | Distinguishing invariant |
-|--------|-------|---------|------------------------|
-| **A** | 176 | Unique order | No other type has this group order |
-| **B** | 23,199 | Unique IdGroup | Distinguished by GAP's SmallGroups library ID `[order, id]` |
-| **C** | 16,880 | Unique sigKey | Distinguished by `[order, |G'|, nrCC, derivedLength, abelianInvariants]` |
-| **D** | 32,646 | Unique (sigKey, histogram) | Same sigKey but unique element-order histogram |
-| **E** | 5,963 | Unique (sigKey, histogram, \|Aut\|) | Same (sigKey, histogram) but unique automorphism group order |
-| **F** | 5,360 | Unique crpfHash | Same (sigKey, histogram, \|Aut\|) but unique character table fingerprint |
-| **G** | 22 | Non-isomorphic pair | All invariants identical; confirmed distinct by `IsomorphismGroups` returning `fail` |
+**The character-table invariant `ctinv`.** A character table is determined by the group only up to the
+order of its rows (irreducible characters) and columns (classes), and its power maps refer to column
+positions. `ctinv` records nothing that depends on those orderings:
 
-**Total**: 176 + 23,199 + 16,880 + 32,646 + 5,963 + 5,360 + 22 = **84,246**
+- Classes start coloured by (element order, class size) and characters by degree.
+- Each round, a class's colour is refined by the sorted multiset of (character colour, value) and by
+  the colours of its p-th power classes. A character's colour is refined by the sorted multiset of
+  (class colour, value).
+- Refinement stops when the partitions no longer split. The result is the SHA-256 hash of the final
+  sorted colour multisets (`v6_gap/ctinv.py`).
 
-### Invariant Details
+Isomorphic groups therefore always get equal `ctinv`, and different values prove non-isomorphism. The
+verifier also recomputes it on randomly relabelled copies, which must reproduce the original value.
 
-- **sigKey**: `[order, derivedSubgroupSize, nrConjugacyClasses, derivedLength, abelianInvariants]`
-  - `derivedLength = -1` for non-solvable groups
-- **histogram**: Element-order histogram — for each element order `d` dividing `|G|`,
-  the number of elements of order `d`, formatted as a sorted list
-- **crpfHash**: Canonical Row-Power Fingerprint hash — a compact isomorphism
-  invariant derived from the character table.
+**The complete coset-action search.** For permutation groups D and R of equal order, where D has
+orbits O₁,…,O_k: D ≅ R if and only if R, acting on the disjoint union of the coset spaces R/H_j for
+some conjugacy classes of subgroups H_j with [R:H_j] = |O_j|, is conjugate to D in Sym(O₁)×…×Sym(O_k).
+Searching all such tuples either finds an isomorphism or proves there is none (`v6_gap/coset_engine.g`).
 
-  **Construction.** For a group G with n conjugacy classes, let `ct` be its
-  character table, `Irr(ct)` the irreducible characters, and `PowerMap(ct, j)`
-  the map sending class i to the class containing j-th powers of elements in i.
-  For each conjugacy class i, form the fingerprint:
+**The G-pairs.** Only one pair of groups needs more than the invariants above, and it appears twice:
+- types 43999/44000, order 4,000 on 15 points;
+- types 54779/54780, the same two groups times C₂.
 
-  ```
-  fp[i] = [ [PowerMap(ct,1)[i], ..., PowerMap(ct,n)[i]], chi_1(i), chi_2(i), ..., chi_k(i) ]
-  ```
+The two character tables are identical, power maps included. The pair is separated by its normal
+subgroups of order 2,000, which for the order-4,000 groups are exactly the three index-2 subgroups:
 
-  Sort the list `[fp[1], ..., fp[n]]` lexicographically, convert to a string,
-  and take the first 16 hex digits of its SHA-256 hash.
+| | `ns` = sorted [IdGroup(N), IdGroup(G/N)] over normal N with \|N\| = 2000 |
+|---|---|
+| type 43999 | [2000, 902], [2000, 912], [2000, 924], each with quotient C₂ |
+| type 44000 | [2000, 901], [2000, 913], [2000, 924], each with quotient C₂ |
 
-  **Why it is an isomorphism invariant.** An isomorphism `phi: G -> H` induces a
-  bijection on conjugacy classes that (1) preserves character values (since
-  `chi(phi(g)) = (chi . phi)(g)` and composition with an isomorphism permutes
-  the irreducible characters), and (2) commutes with power maps (since
-  `phi(g^j) = phi(g)^j`). Therefore the *multiset* of fingerprints is the same
-  for isomorphic groups. Sorting makes this canonical, so any two isomorphic
-  groups produce the same sorted fingerprint list and thus the same hash.
-  Conversely, different hashes guarantee non-isomorphism.
+The certificate stores `nsord := 2000` and `ns` for each G-type. The verifier recomputes both from
+the class groups and checks that they differ within each pair. The complete coset-action search is a
+second, independent proof.
 
-### Proof File Structure
+Not used as evidence anywhere: |Aut(G)|, a `fail` from `IsomorphismGroups`, or v5's `crpfHash`.
 
-Each proof in `s17_proofs.g` establishes that a duplicate conjugacy class
-representative is isomorphic to a type representative:
+**Proofs** (`s17_proofs_v6.g`) each have the form
+`rec(duplicate := N, representative := M, gens := [...], images := [...], method := "...")`.
+A proof is valid when `gens` generate class N's group, `images` lie in class M's group, and
+gens ↦ images extends to a bijective homomorphism.
 
-```gap
-rec(
-  duplicate := 500123,          # Index of the duplicate class
-  representative := 105327,     # Index of the type representative
-  gens := [(1,2,3), (1,2)],    # Generators of the duplicate's group
-  images := [(4,5,6), (4,5)],  # Images under the isomorphism
-  method := "projLift"          # Method used to find the isomorphism
-)
-```
+## Verification pipeline (`verify_a174511_17_v6.py`)
 
-The proof is valid if `GroupHomomorphismByImages(G_dup, G_rep, gens, images)`
-returns a non-`fail` homomorphism in GAP (i.e., the mapping on generators
-extends to a genuine group homomorphism).
-
-### IdGroup Map Structure
-
-The IdGroup map (`s17_idgroup_map.g`) provides `[order, id]` pairs for all
-conjugacy classes whose groups are small enough for GAP's SmallGroups library
-(order < 2000, excluding orders 512, 768, 1024, 1536):
-
-```gap
-S17_IDGROUP_MAP := [
-  [index1, order1, id1],
-  [index2, order2, id2],
-  ...
-];
-```
-
-Two groups with the same `[order, id]` are isomorphic by definition.
-
-## Verification Pipeline
-
-The verification script runs 6 phases:
-
-### Phase 0: Setup
-Decompresses `.gz` files to `work/` (~409 MB total).
-
-### Phase 1: Certificate Internal Consistency (Python, ~1 second)
-- Verifies 84,246 type records with contiguous type numbers 1..84,246
-- Checks all representative indices are unique
-- Verifies A-types have unique orders
-- Verifies C-types have unique sigKeys within their invariant bucket
-- Verifies D-types have unique (sigKey, histogram) pairs
-- Verifies E-types have unique (sigKey, histogram, |Aut|) triples
-- Verifies F-types have unique crpfHash within their bucket
-- Verifies G-types form valid pairs with identical invariants
-
-### Phase 2: Proof Validation (GAP, parallel, ~7 minutes)
-- Validates all 389,889 isomorphism proofs
-- For each proof: constructs `GroupHomomorphismByImages(G, H, gens, images)`
-  and verifies it returns a valid homomorphism (not `fail`)
-- Zero tolerance: any invalid proof is a pipeline failure
-
-### Phase 3: Invariant Verification (GAP, parallel, ~40 minutes)
-- Recomputes invariants from actual group generators for all types that declare them:
-  - **Order**: recomputed for all 84,246 types
-  - **sigKey**: recomputed for all types with `sk` field
-  - **Histogram**: recomputed for all types with `h` field
-  - **|Aut|**: recomputed for all types with `aut` field
-- Compares each recomputed value against the certificate
-
-### Phase 3b: crpfHash Verification (GAP, parallel, ~1 hour)
-- Recomputes character table fingerprint hashes for all 5,358 F/G-types
-- Uses canonical Row-Power Fingerprint: for each conjugacy class, compute
-  power map signature + character values, sort, hash
-- Compares against certificate's `crpf` field
-
-### Phase 4: G-pair Verification (GAP, ~30 minutes)
-- Runs `IsomorphismGroups` on all 11 G-pairs (22 types)
-- Confirms each pair returns `fail` (groups are genuinely non-isomorphic)
-- These are the hardest cases: all computable invariants are identical
-
-### Phase 5: Class-to-Type Map (Python, ~10 seconds)
-- Builds a complete mapping from all 1,466,358 conjugacy class indices to
-  their type number (1..84,246), using three sources:
-  - 84,246 type representative indices (direct from certificate)
-  - 1,015,460 IdGroup lookups (matching `[order, id]` to B-type representatives)
-  - 389,889 proof chain resolutions (following duplicate -> representative chains)
-- Verifies 100% coverage (every class index assigned to exactly one type)
-- Computes A174511(n) for n = 0..17 by finding the minimum class index per type
-  and checking which S_n each type first appears in
-- Cross-checks against known values: A174511(12) = 2,065; A174511(13) = 3,845;
-  A174511(14) = 7,766
+| Phase | Check |
+|------:|-------|
+| 0 | decompress the data files into `work_v6/` |
+| 1 | certificate consistency: counts, contiguous numbering, each category's uniqueness claim, and separating evidence for every pair of types sharing (sigKey, histogram) |
+| 2 | all 389,891 proofs, against the *actual* class groups |
+| 3 | order, sigKey and histogram of every type, and IdGroup of every B-type, recomputed |
+| 3b | `ctinv` of every H/G type recomputed from its character table, plus 40 relabelling self-tests |
+| 4 | every G-pair: `ns` recomputed and different within the pair; complete coset-action search must prove non-isomorphism |
+| 5 | every IdGroup-map entry recomputed; class-to-type map (all 1,466,358 classes); A174511(n) for n ≤ 17 |
 
 ## Results
 
-The full verification produces:
+The verification run of 2026-09-28 (`verify_run_v6.log`) passed every phase. The G-pairs' `ns`
+fields were added afterwards, and phases 1 and 4 were re-run on the final file
+(`verify_run_v6_gpairs.log`). The run reproduces the known values for n = 12..14 and the S₁₅ and S₁₆
+certificates:
 
 ```
-A174511(n):
    n   A000638(n)   A174511(n)      New
-----------------------------------------
    0            1            1        1
    1            1            1        0
    2            2            2        1
@@ -207,34 +135,15 @@ A174511(n):
   14       75,154        7,766    3,921
   15      159,129       16,438    8,672
   16      686,165       43,626   27,188
-  17    1,466,358       84,246   40,620
+  17    1,466,358       84,244   40,618
 ```
 
-Where:
-- **A000638(n)** = number of conjugacy classes of subgroups of S_n
-- **A174511(n)** = number of isomorphism types of subgroups of S_n
-- **New** = types appearing for the first time at this n (not isomorphic to
-  any subgroup of S_{n-1})
+A000638(n) is the number of conjugacy classes of subgroups of S_n. "New" counts the types first
+appearing in S_n, i.e. not isomorphic to any subgroup of S_{n−1}.
 
 ## Requirements
 
-- **GAP 4.15+** with Cygwin runtime (Windows) or native (Linux/Mac)
-- **Python 3.8+**
-- ~500 MB disk space for decompressed working files
-- ~8 GB RAM per GAP worker (configurable via script)
-
-## Verification Output
-
-A successful run of the included `verify_run.log` shows:
-
-```
-Phase 0: PASS  — Data decompressed
-Phase 1: PASS  — Certificate internally consistent
-Phase 2: PASS  — 389,889/389,889 proofs valid
-Phase 3: PASS  — All invariants match (orders, sigKeys, histograms, |Aut|)
-Phase 3b: PASS — 5,358/5,358 crpfHash values match
-Phase 4: PASS  — 11/11 G-pairs confirmed non-isomorphic
-Phase 5: PASS  — 1,466,358/1,466,358 classes mapped, A174511(12..14) cross-checked
-
-*** A174511(17) = 84,246 VERIFIED ***
-```
+- GAP 4.15+ (Cygwin build on Windows, or native Linux/macOS; adjust `GAP_BASH`/`GAP_CMD` in the script)
+- Python 3.9+
+- about 2 GB of disk space for the decompressed working files and recomputed character tables
+- about 12 GB of RAM per GAP worker for the largest character tables

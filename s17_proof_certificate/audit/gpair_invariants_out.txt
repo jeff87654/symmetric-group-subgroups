@@ -1,0 +1,67 @@
+# Started at 2026-09-28 15:46:13.791865
+
+== sizes: true  (0 ms)
+   G1: 4000
+   G2: 4000
+
+== orbits [len, TransitiveIdentification, image size]: true  (31 ms)
+   G1: [ [ 10, 33, 800 ], [ 5, 3, 20 ] ]
+   G2: [ [ 10, 33, 800 ], [ 5, 3, 20 ] ]
+
+== center / derived / Frattini / Fitting: true  (62 ms)
+   G1: [ [ 1, 1 ], [ 500, 44 ], [ 1, 1 ], [ 125, 5 ] ]
+   G2: [ [ 1, 1 ], [ 500, 44 ], [ 1, 1 ], [ 125, 5 ] ]
+
+== derived series: true  (0 ms)
+   G1: [ [ 4000, fail ], [ 500, 44 ], [ 25, 2 ], [ 1, 1 ] ]
+   G2: [ [ 4000, fail ], [ 500, 44 ], [ 25, 2 ], [ 1, 1 ] ]
+
+== Sylow 2, Sylow 5, their normalizers: true  (32 ms)
+   G1: [ [ 32, 11 ], [ 125, 5 ], [ 32, 11 ], [ 4000, fail ] ]
+   G2: [ [ 32, 11 ], [ 125, 5 ], [ 32, 11 ], [ 4000, fail ] ]
+
+== maximal subgroup classes [IdGroup, class length]: false  (359 ms)
+   G1: [ [ [ [ 160, 85 ], 25 ], 1 ], [ [ [ 800, 1191 ], 5 ], 1 ], 
+  [ [ [ 2000, 902 ], 1 ], 1 ], [ [ [ 2000, 912 ], 1 ], 1 ], 
+  [ [ [ 2000, 924 ], 1 ], 1 ] ]
+   G2: [ [ [ [ 160, 85 ], 25 ], 1 ], [ [ [ 800, 1191 ], 5 ], 1 ], 
+  [ [ [ 2000, 901 ], 1 ], 1 ], [ [ [ 2000, 913 ], 1 ], 1 ], 
+  [ [ [ 2000, 924 ], 1 ], 1 ] ]
+
+== normal subgroups [IdGroup(N), IdGroup(G/N)]: false  (453 ms)
+   G1 only: [ [ [ [ 2000, 902 ], [ 2, 1 ] ], 1 ], 
+  [ [ [ 2000, 912 ], [ 2, 1 ] ], 1 ] ]
+   G2 only: [ [ [ [ 2000, 901 ], [ 2, 1 ] ], 1 ], 
+  [ [ [ 2000, 913 ], [ 2, 1 ] ], 1 ] ]
+
+== character tables permutation-equivalent (incl. power maps): true  (578 ms)
+   G1: true
+   G2: true
+
+== number of conjugacy classes of subgroups: true  (1844 ms)
+   G1: 144
+   G2: 144
+
+== subgroup classes [IdGroup, class length]: false  (734 ms)
+   G1 only: [ [ [ [ 20, 3 ], 200 ], 1 ], [ [ [ 100, 10 ], 40 ], 1 ], 
+  [ [ [ 100, 11 ], 10 ], 1 ], [ [ [ 100, 12 ], 2 ], 2 ], 
+  [ [ [ 500, 44 ], 2 ], 2 ], [ [ [ 500, 47 ], 2 ], 1 ], 
+  [ [ [ 1000, 163 ], 2 ], 1 ], [ [ [ 1000, 174 ], 2 ], 2 ], 
+  [ [ [ 2000, 902 ], 1 ], 1 ], [ [ [ 2000, 912 ], 1 ], 1 ] ]
+   G2 only: [ [ [ [ 20, 3 ], 40 ], 1 ], [ [ [ 100, 9 ], 40 ], 1 ], 
+  [ [ [ 100, 11 ], 2 ], 1 ], [ [ [ 100, 12 ], 2 ], 1 ], 
+  [ [ [ 100, 12 ], 10 ], 1 ], [ [ [ 500, 43 ], 2 ], 1 ], 
+  [ [ [ 500, 44 ], 2 ], 1 ], [ [ [ 500, 46 ], 2 ], 1 ], 
+  [ [ [ 1000, 164 ], 2 ], 1 ], [ [ [ 1000, 173 ], 2 ], 1 ], 
+  [ [ [ 1000, 174 ], 2 ], 1 ], [ [ [ 2000, 901 ], 1 ], 1 ], 
+  [ [ [ 2000, 913 ], 1 ], 1 ] ]
+
+== subgroup classes [index, core order, TransitiveIdentification of coset acti\
+on]: true  (1579 ms)
+   G1 only: [  ]
+   G2 only: [  ]
+
+ALLDONE
+
+# Finished at 2026-09-28 15:46:28.219807
+# Exit code: 0

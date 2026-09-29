@@ -1,0 +1,19 @@
+# Started at 2026-09-28 15:46:52.477988
+
+Syntax warning: Unbound global variable in /cygdrive/c/Users/jeffr/Downloads/S\
+ymmetric Groups/s17_proof_certificate/audit/gpair_invariants_8000.g:9
+        Collected(List(Filtered(NormalSubgroups(g), N -> Size(N) = 2000), N ->\
+ [ IdGroup(N), IdGroup(g / N) ])), "\n");
+                                                                              \
+                       ^
+8000  normal subgroups of order 2000: [ [ [ [ 2000, 902 ], [ 4, 2 ] ], 2 ], 
+  [ [ [ 2000, 912 ], [ 4, 2 ] ], 2 ], [ [ [ 2000, 924 ], [ 4, 1 ] ], 2 ], 
+  [ [ [ 2000, 924 ], [ 4, 2 ] ], 2 ], [ [ [ 2000, 937 ], [ 4, 2 ] ], 1 ], 
+  [ [ [ 2000, 942 ], [ 4, 1 ] ], 1 ], [ [ [ 2000, 944 ], [ 4, 1 ] ], 1 ] ]
+8000  normal subgroups of order 2000: [ [ [ [ 2000, 901 ], [ 4, 2 ] ], 2 ], 
+  [ [ [ 2000, 913 ], [ 4, 2 ] ], 2 ], [ [ [ 2000, 924 ], [ 4, 1 ] ], 2 ], 
+  [ [ [ 2000, 924 ], [ 4, 2 ] ], 2 ], [ [ [ 2000, 937 ], [ 4, 2 ] ], 1 ], 
+  [ [ [ 2000, 942 ], [ 4, 1 ] ], 1 ], [ [ [ 2000, 944 ], [ 4, 1 ] ], 1 ] ]
+
+# Finished at 2026-09-28 15:47:01.225649
+# Exit code: 0

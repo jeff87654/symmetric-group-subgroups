@@ -1,0 +1,42 @@
+A174511(17) verification, certificate v6 -- started 2026-09-28 16:05:19.457660  workers=1  phases=['0', '1', '4']
+
+================================================================
+PHASE 0: Setup
+================================================================
+  s17_subgroups_cycles.g: present
+  s17_proofs_v6.g: present
+  s17_idgroup_map.g: present
+  s17_verification_certificate_v6.g: present
+
+================================================================
+PHASE 1: Certificate consistency
+================================================================
+  method counts: {'A': 176, 'B': 24068, 'C': 16880, 'D': 32658, 'G': 4, 'H': 10458}  total 84244
+  (sigKey, histogram) bucket pairs checked: 11817
+
+  Phase 1: PASS
+
+================================================================
+PHASE 4: 2 G-pairs: normal-subgroup profiles and complete coset-action search
+================================================================
+   43999/44000: normal subgroups of order 2000, [IdGroup(N), IdGroup(G/N)] recomputed true/true, differ True
+     43999: [[[2000,902],[2,1]],[[2000,912],[2,1]],[[2000,924],[2,1]]]
+     44000: [[[2000,901],[2,1]],[[2000,913],[2,1]],[[2000,924],[2,1]]]
+   54779/54780: normal subgroups of order 2000, [IdGroup(N), IdGroup(G/N)] recomputed true/true, differ True
+     54779: [[[2000,902],[4,2]],[[2000,902],[4,2]],[[2000,912],[4,2]],[[2000,912],[4,2]],[[2000,924],[4,1]],[[2000,924],[4,1]],[[2000,924],[4,2]],[[2000,924],[4,2]],[[2000,937],[4,2]],[[2000,942],[4,1]],[[2000,944],[4,1]]]
+     54780: [[[2000,901],[4,2]],[[2000,901],[4,2]],[[2000,913],[4,2]],[[2000,913],[4,2]],[[2000,924],[4,1]],[[2000,924],[4,1]],[[2000,924],[4,2]],[[2000,924],[4,2]],[[2000,937],[4,2]],[[2000,942],[4,1]],[[2000,944],[4,1]]]
+   43999 44000 noniso complete search, 1 checks
+   54779 54780 noniso complete search, 1 checks
+
+  Phase 4: PASS
+
+================================================================
+SUMMARY
+================================================================
+  phase 0: PASS
+  phase 1: PASS
+  phase 4: PASS
+
+  all selected phases passed (a complete verification runs every phase with fresh tables)
+
+Finished 2026-09-28 16:05:35.253821

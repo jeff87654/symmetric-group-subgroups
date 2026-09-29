@@ -1,0 +1,6 @@
+tables: 11345 types, 40 self-test copies
+self-test: 40 relabelled copies match, 0 MISMATCH []
+certificate sigKey/histogram re-verified: 11345 ok, 0 differ []
+   distinct: IdGroup                           752
+   distinct: character-table invariant       11063
+   residual: needs complete search               4

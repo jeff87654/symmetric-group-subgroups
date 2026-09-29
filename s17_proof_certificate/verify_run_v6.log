@@ -1,0 +1,75 @@
+# A174511(17) certificate v6 verification log (GAP 4.15.1, 2 workers)
+# Phases 0-1: run of 2026-09-28 04:04; phase 2: run of 04:05 (stopped by the host for low memory
+# after phase 2 completed); phases 3-5: run of 06:57-13:11. Phase 3b reused audit/tables.
+
+PHASE 2: Proof linkage (389891 proofs)
+================================================================
+  proofs parsed: 389891; distinct duplicates: 389891
+  valid 389891, invalid 0, chunks without result 0  (1965s)
+
+  Phase 2: PASS
+
+A174511(17) verification, certificate v6 -- started 2026-09-28 06:57:32.465110  workers=2  phases=['3', '3b', '4', '5']
+
+================================================================
+PHASE 3: Invariants of all 84244 types
+================================================================
+  types verified 84244, mismatches 0, chunks without result 0  (15902s)
+
+  Phase 3: PASS
+
+================================================================
+PHASE 3b: ctinv of 10462 H/G types  [REUSING tables from audit/tables]
+================================================================
+  ctinv recomputed 10462/10462; mismatches 0 []; missing 0 []
+  relabelling self-tests: 40/40 reproduce their original's ctinv
+
+  Phase 3b: PASS
+
+================================================================
+PHASE 4: complete coset-action search on 2 G-pairs
+================================================================
+   43999 44000 noniso complete search, 1 checks
+   54779 54780 noniso complete search, 1 checks
+
+  Phase 4: PASS
+
+================================================================
+PHASE 5: IdGroup map, class-to-type map, A174511(n)
+================================================================
+  IdGroup-map entries verified 1015460/1015460, wrong 0, chunks without result 0  (3127s)
+  classes mapped 1,466,358/1,466,358  {'rep': 84244, 'idgroup': 992223, 'proof': 389891}  missing 0
+
+    n  A000638(n)  A174511(n)     new
+    0           1           1       1
+    1           1           1       0
+    2           2           2       1
+    3           4           4       2
+    4          11           9       5
+    5          19          16       7
+    6          56          29      13
+    7          96          55      26
+    8         296         137      82
+    9         554         241     104
+   10       1,593         453     212
+   11       3,094         894     441
+   12      10,723       2,065   1,171 OK
+   13      20,832       3,845   1,780 OK
+   14      75,154       7,766   3,921 OK
+   15     159,129      16,438   8,672 = S15 certificate
+   16     686,165      43,626  27,188 = S16 certificate
+   17   1,466,358      84,244  40,618
+
+  Phase 5: PASS
+
+================================================================
+SUMMARY
+================================================================
+  phase 3: PASS
+  phase 3b: PASS
+  phase 4: PASS
+  phase 5: PASS
+
+  all selected phases passed (a complete verification runs every phase with fresh tables)
+
+Finished 2026-09-28 13:11:30.147133
